@@ -31,6 +31,8 @@ coverage-extensions.out
 /build/composition-frontend/
 # Units extensions.mod requires, copied out of the module cache by gen-composition.
 /build/extensions/
+# The rewritten core files and overlay.json gen-composition writes for units' overlays/.
+/build/overlay/
 
 # The macOS desktop bundle's build output (`desktop/build/*.sh`): a staged
 # Postgres+pgvector tree, the compiled binaries, and the assembled

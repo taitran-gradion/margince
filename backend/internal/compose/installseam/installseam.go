@@ -13,8 +13,6 @@
 package installseam
 
 import (
-	"sync/atomic"
-
 	"github.com/margince/margince/backend/internal/modules/activities"
 	"github.com/margince/margince/backend/internal/modules/approvals"
 	"github.com/margince/margince/backend/internal/modules/contacts"
@@ -27,8 +25,7 @@ import (
 // Deals is the installation seam the deals module reads through.
 func Deals() deals.Installation {
 	return deals.Installation{
-		WrapCreate: wrapDealCreate,
-		Name:       identity.NameOf,
+		Name: identity.NameOf,
 		// contacts owns `company` and its provenance sidecar, so the "has a
 		// human confirmed what this installation is called" read lives there
 		// and the edge is injected here.
@@ -56,22 +53,4 @@ func Deals() deals.Installation {
 		// before it calls a cited contract openable.
 		ContractVisible: contracts.VisibleClause,
 	}
-}
-
-// dealCreateWrap is the extension set's decoration of a deal's creation, set
-// once at boot by compose, which owns the set. Read per create, so a store
-// built earlier still runs it.
-var dealCreateWrap atomic.Pointer[deals.WrapCreate]
-
-// SetDealCreateWrap installs the extension set's decoration of deal creation.
-func SetDealCreateWrap(wrap deals.WrapCreate) {
-	dealCreateWrap.Store(&wrap)
-}
-
-func wrapDealCreate(next deals.CreateInTx) deals.CreateInTx {
-	wrap := dealCreateWrap.Load()
-	if wrap == nil {
-		return next
-	}
-	return (*wrap)(next)
 }

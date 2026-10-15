@@ -310,14 +310,14 @@ type Extension struct {
 	// checked against. See EventHandler.
 	Subscriptions []Subscription
 
-	// DecorateDeals wraps core's deal service with this unit's logic, inside
-	// the deal's own transaction. It is derived into manifest.generated.json,
-	// so an operator sees that the unit changes how deals are created.
-	DecorateDeals DealDecorator
+	// WriteHooks run after core's audited writes, inside their transactions.
+	// OperationHooks run before core's contract operations. Both are derived
+	// into the manifest, so an operator sees what the unit intercepts.
+	WriteHooks     []WriteHook
+	OperationHooks []OperationHook
 
 	// ScoreDeals provides the deal scorer core has no implementation of.
-	// Derived into the manifest like DecorateDeals; two units providing one
-	// refuse to boot.
+	// Derived into the manifest; two units providing one refuse to boot.
 	ScoreDeals DealScorer
 
 	// Ingress are the providers this unit brings records IN from, and the

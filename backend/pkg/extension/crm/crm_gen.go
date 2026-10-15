@@ -318,99 +318,30 @@ func (e CreateActivityRequestMeetingStatus) Valid() bool {
 	}
 }
 
-// Defines values for CreateDealRequestCommercialMotion.
-const (
-	CreateDealRequestCommercialMotionCrossSell        CreateDealRequestCommercialMotion = "cross_sell"
-	CreateDealRequestCommercialMotionExistingBusiness CreateDealRequestCommercialMotion = "existing_business"
-	CreateDealRequestCommercialMotionExpansion        CreateDealRequestCommercialMotion = "expansion"
-	CreateDealRequestCommercialMotionNewBusiness      CreateDealRequestCommercialMotion = "new_business"
-	CreateDealRequestCommercialMotionRenewal          CreateDealRequestCommercialMotion = "renewal"
-	CreateDealRequestCommercialMotionUpsell           CreateDealRequestCommercialMotion = "upsell"
-)
-
-// Valid indicates whether the value is a known member of the CreateDealRequestCommercialMotion enum.
-func (e CreateDealRequestCommercialMotion) Valid() bool {
-	switch e {
-	case CreateDealRequestCommercialMotionCrossSell:
-		return true
-	case CreateDealRequestCommercialMotionExistingBusiness:
-		return true
-	case CreateDealRequestCommercialMotionExpansion:
-		return true
-	case CreateDealRequestCommercialMotionNewBusiness:
-		return true
-	case CreateDealRequestCommercialMotionRenewal:
-		return true
-	case CreateDealRequestCommercialMotionUpsell:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for CreateDealRequestPartnerAttribution.
-const (
-	CreateDealRequestPartnerAttributionInfluenced CreateDealRequestPartnerAttribution = "influenced"
-	CreateDealRequestPartnerAttributionSourced    CreateDealRequestPartnerAttribution = "sourced"
-)
-
-// Valid indicates whether the value is a known member of the CreateDealRequestPartnerAttribution enum.
-func (e CreateDealRequestPartnerAttribution) Valid() bool {
-	switch e {
-	case CreateDealRequestPartnerAttributionInfluenced:
-		return true
-	case CreateDealRequestPartnerAttributionSourced:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for CreateDealRequestPriority.
-const (
-	CreateDealRequestPriorityHigh   CreateDealRequestPriority = "high"
-	CreateDealRequestPriorityLow    CreateDealRequestPriority = "low"
-	CreateDealRequestPriorityMedium CreateDealRequestPriority = "medium"
-)
-
-// Valid indicates whether the value is a known member of the CreateDealRequestPriority enum.
-func (e CreateDealRequestPriority) Valid() bool {
-	switch e {
-	case CreateDealRequestPriorityHigh:
-		return true
-	case CreateDealRequestPriorityLow:
-		return true
-	case CreateDealRequestPriorityMedium:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for DealCommercialMotion.
 const (
-	DealCommercialMotionCrossSell        DealCommercialMotion = "cross_sell"
-	DealCommercialMotionExistingBusiness DealCommercialMotion = "existing_business"
-	DealCommercialMotionExpansion        DealCommercialMotion = "expansion"
-	DealCommercialMotionNewBusiness      DealCommercialMotion = "new_business"
-	DealCommercialMotionRenewal          DealCommercialMotion = "renewal"
-	DealCommercialMotionUpsell           DealCommercialMotion = "upsell"
+	CrossSell        DealCommercialMotion = "cross_sell"
+	ExistingBusiness DealCommercialMotion = "existing_business"
+	Expansion        DealCommercialMotion = "expansion"
+	NewBusiness      DealCommercialMotion = "new_business"
+	Renewal          DealCommercialMotion = "renewal"
+	Upsell           DealCommercialMotion = "upsell"
 )
 
 // Valid indicates whether the value is a known member of the DealCommercialMotion enum.
 func (e DealCommercialMotion) Valid() bool {
 	switch e {
-	case DealCommercialMotionCrossSell:
+	case CrossSell:
 		return true
-	case DealCommercialMotionExistingBusiness:
+	case ExistingBusiness:
 		return true
-	case DealCommercialMotionExpansion:
+	case Expansion:
 		return true
-	case DealCommercialMotionNewBusiness:
+	case NewBusiness:
 		return true
-	case DealCommercialMotionRenewal:
+	case Renewal:
 		return true
-	case DealCommercialMotionUpsell:
+	case Upsell:
 		return true
 	default:
 		return false
@@ -443,16 +374,16 @@ func (e DealForecastCategory) Valid() bool {
 
 // Defines values for DealPartnerAttribution.
 const (
-	DealPartnerAttributionInfluenced DealPartnerAttribution = "influenced"
-	DealPartnerAttributionSourced    DealPartnerAttribution = "sourced"
+	Influenced DealPartnerAttribution = "influenced"
+	Sourced    DealPartnerAttribution = "sourced"
 )
 
 // Valid indicates whether the value is a known member of the DealPartnerAttribution enum.
 func (e DealPartnerAttribution) Valid() bool {
 	switch e {
-	case DealPartnerAttributionInfluenced:
+	case Influenced:
 		return true
-	case DealPartnerAttributionSourced:
+	case Sourced:
 		return true
 	default:
 		return false
@@ -461,19 +392,19 @@ func (e DealPartnerAttribution) Valid() bool {
 
 // Defines values for DealPriority.
 const (
-	DealPriorityHigh   DealPriority = "high"
-	DealPriorityLow    DealPriority = "low"
-	DealPriorityMedium DealPriority = "medium"
+	High   DealPriority = "high"
+	Low    DealPriority = "low"
+	Medium DealPriority = "medium"
 )
 
 // Valid indicates whether the value is a known member of the DealPriority enum.
 func (e DealPriority) Valid() bool {
 	switch e {
-	case DealPriorityHigh:
+	case High:
 		return true
-	case DealPriorityLow:
+	case Low:
 		return true
-	case DealPriorityMedium:
+	case Medium:
 		return true
 	default:
 		return false
@@ -898,63 +829,6 @@ type CreateActivityRequestLinksEntityType string
 // CreateActivityRequestMeetingStatus defines model for CreateActivityRequest.MeetingStatus.
 type CreateActivityRequestMeetingStatus string
 
-// CreateDealRequest defines model for CreateDealRequest.
-type CreateDealRequest struct {
-	// AcquisitionSource An active key from `/acquisition-sources`. A retired key is refused for a NEW assignment (422 `acquisition_source_retired`) but a deal already holding one keeps it through unrelated edits. Null clears it.
-	AcquisitionSource *string `json:"acquisition_source,omitempty"`
-	AmountMinor       *int64  `json:"amount_minor,omitempty"`
-
-	// CommercialMotion Why this deal exists commercially: `new_business` (first purchase by this customer), `renewal` (continuing an agreement, when that is the primary purpose), `upsell` (more capacity or a higher tier of something they already have), `cross_sell` (a different offering to an existing customer), `expansion` (growth spanning offerings, or outside the more specific choices), `existing_business` (the relationship is known, the motion is not). A combined renewal-and-growth deal takes its PRIMARY purpose — one value is a reporting classification, not revenue split across motions. Null means unknown, which is different from `existing_business`: unknown has not been asked, `existing_business` has been asked and answered "not more precisely than this".
-	CommercialMotion *CreateDealRequestCommercialMotion `json:"commercial_motion,omitempty"`
-	CompanyId        *string                            `json:"company_id,omitempty"`
-	Currency         *string                            `json:"currency,omitempty"`
-
-	// Description The human-authored statement of what the customer needs, what is in scope and what outcome is intended. Distinct from the GENERATED deal briefing: this is what a colleague wrote, and no assembler may overwrite it. It is supplied to the status/advice assembler as evidence, never as an instruction to follow.
-	Description *string `json:"description,omitempty"`
-
-	// ExpectedArrMinor Expected annual recurring revenue in minor units of `currency`. Null means no recurring component, which is not zero.
-	ExpectedArrMinor *int64 `json:"expected_arr_minor,omitempty"`
-
-	// ExpectedCloseDate Deals are born open, so a date before today is rejected 422 (INV-CLOSE-PAST, formulas §11).
-	ExpectedCloseDate *string `json:"expected_close_date,omitempty"`
-	Name              string  `json:"name"`
-	OwnerId           *string `json:"owner_id,omitempty"`
-
-	// PartnerAttribution `sourced` or `influenced`. Naming a partner without this field attributes the deal `sourced`; an attribution for a deal naming no partner is refused 422.
-	PartnerAttribution *CreateDealRequestPartnerAttribution `json:"partner_attribution,omitempty"`
-
-	// PartnerCompanyId The partner this deal is attributed to at birth. The company must have a live `partner` row (else 422 `not_a_partner`), and the caller must be able to read it.
-	PartnerCompanyId *string `json:"partner_company_id,omitempty"`
-	PipelineId       string  `json:"pipeline_id"`
-
-	// Priority Human importance, set by a colleague and never derived. Deliberately independent of amount, score, stage and the computed urgency a worklist reads: those already exist, and a field that merely restates them would be a second answer to a question the product answers. Null is "nobody has said", not "medium" — new deals are born null and closing one preserves what it held.
-	Priority *CreateDealRequestPriority `json:"priority,omitempty"`
-
-	// ProjectId The body of work this deal belongs to; must name the same company as the deal.
-	ProjectId *string `json:"project_id,omitempty"`
-	Source    string  `json:"source"`
-
-	// SourceAuthorId Who wrote this record in the system it came from, when the author holds a seat here. Written only by a declared importer (a signed-in human holding import_run:create), only beside a source_system; either author field or both may be sent, and the seat's current name wins on read. captured_by still names the caller.
-	SourceAuthorId *string `json:"source_author_id,omitempty"`
-
-	// SourceAuthorName The source system's own spelling of who wrote this record. Same door as source_author_id: a declared importer only, beside a source_system. Kept when a seat is also named, so the name survives the seat.
-	SourceAuthorName *string `json:"source_author_name,omitempty"`
-
-	// SourceSystem Which external system this record came from, when a caller imported it. The reserved mirror: namespace is refused on this wire except for a declared importer: a signed-in human holding import_run:create (an agent carrying those grants is still refused).
-	SourceSystem         *string                `json:"source_system,omitempty"`
-	StageId              string                 `json:"stage_id"`
-	AdditionalProperties map[string]interface{} `json:"-"`
-}
-
-// CreateDealRequestCommercialMotion Why this deal exists commercially: `new_business` (first purchase by this customer), `renewal` (continuing an agreement, when that is the primary purpose), `upsell` (more capacity or a higher tier of something they already have), `cross_sell` (a different offering to an existing customer), `expansion` (growth spanning offerings, or outside the more specific choices), `existing_business` (the relationship is known, the motion is not). A combined renewal-and-growth deal takes its PRIMARY purpose — one value is a reporting classification, not revenue split across motions. Null means unknown, which is different from `existing_business`: unknown has not been asked, `existing_business` has been asked and answered "not more precisely than this".
-type CreateDealRequestCommercialMotion string
-
-// CreateDealRequestPartnerAttribution `sourced` or `influenced`. Naming a partner without this field attributes the deal `sourced`; an attribution for a deal naming no partner is refused 422.
-type CreateDealRequestPartnerAttribution string
-
-// CreateDealRequestPriority Human importance, set by a colleague and never derived. Deliberately independent of amount, score, stage and the computed urgency a worklist reads: those already exist, and a field that merely restates them would be a second answer to a question the product answers. Null is "nobody has said", not "medium" — new deals are born null and closing one preserves what it held.
-type CreateDealRequestPriority string
-
 // Deal A deal. Mirrors the `deal` table.
 type Deal struct {
 	// AcquisitionSource The business channel this opportunity came from, as an administered key from `/acquisition-sources` (referral, inbound, partner, event...). Deliberately NOT the technical `source` field beside it: `source` records how the RECORD reached Margince (a connector, an import, a crawl), while this records how the OPPORTUNITY reached the business. A deal typed in by hand can be a referral; an imported one can be outbound. Null means unclassified, which is different from the explicit `other` key.
@@ -1290,351 +1164,6 @@ type SourceAuthor struct {
 	// Via Which system the record came from (`hubspot`), so a surface can say where the attribution comes from rather than presenting it as something typed here. Null when the origin was not recorded.
 	// An import writes its rows inside a reserved `mirror:` namespace, which is machinery for the replay key and is never what a reader should see. The prefix is stripped here: a row stored as `mirror:hubspot` reads `hubspot`.
 	Via *string `json:"via,omitempty"`
-}
-
-// Getter for additional properties for CreateDealRequest. Returns the specified
-// element and whether it was found
-func (a CreateDealRequest) Get(fieldName string) (value interface{}, found bool) {
-	if a.AdditionalProperties != nil {
-		value, found = a.AdditionalProperties[fieldName]
-	}
-	return
-}
-
-// Setter for additional properties for CreateDealRequest
-func (a *CreateDealRequest) Set(fieldName string, value interface{}) {
-	if a.AdditionalProperties == nil {
-		a.AdditionalProperties = make(map[string]interface{})
-	}
-	a.AdditionalProperties[fieldName] = value
-}
-
-// Override default JSON handling for CreateDealRequest to handle AdditionalProperties
-func (a *CreateDealRequest) UnmarshalJSON(b []byte) error {
-	object := make(map[string]json.RawMessage)
-	err := json.Unmarshal(b, &object)
-	if err != nil {
-		return err
-	}
-
-	if raw, found := object["acquisition_source"]; found {
-		err = json.Unmarshal(raw, &a.AcquisitionSource)
-		if err != nil {
-			return fmt.Errorf("error reading 'acquisition_source': %w", err)
-		}
-		delete(object, "acquisition_source")
-	}
-
-	if raw, found := object["amount_minor"]; found {
-		err = json.Unmarshal(raw, &a.AmountMinor)
-		if err != nil {
-			return fmt.Errorf("error reading 'amount_minor': %w", err)
-		}
-		delete(object, "amount_minor")
-	}
-
-	if raw, found := object["commercial_motion"]; found {
-		err = json.Unmarshal(raw, &a.CommercialMotion)
-		if err != nil {
-			return fmt.Errorf("error reading 'commercial_motion': %w", err)
-		}
-		delete(object, "commercial_motion")
-	}
-
-	if raw, found := object["company_id"]; found {
-		err = json.Unmarshal(raw, &a.CompanyId)
-		if err != nil {
-			return fmt.Errorf("error reading 'company_id': %w", err)
-		}
-		delete(object, "company_id")
-	}
-
-	if raw, found := object["currency"]; found {
-		err = json.Unmarshal(raw, &a.Currency)
-		if err != nil {
-			return fmt.Errorf("error reading 'currency': %w", err)
-		}
-		delete(object, "currency")
-	}
-
-	if raw, found := object["description"]; found {
-		err = json.Unmarshal(raw, &a.Description)
-		if err != nil {
-			return fmt.Errorf("error reading 'description': %w", err)
-		}
-		delete(object, "description")
-	}
-
-	if raw, found := object["expected_arr_minor"]; found {
-		err = json.Unmarshal(raw, &a.ExpectedArrMinor)
-		if err != nil {
-			return fmt.Errorf("error reading 'expected_arr_minor': %w", err)
-		}
-		delete(object, "expected_arr_minor")
-	}
-
-	if raw, found := object["expected_close_date"]; found {
-		err = json.Unmarshal(raw, &a.ExpectedCloseDate)
-		if err != nil {
-			return fmt.Errorf("error reading 'expected_close_date': %w", err)
-		}
-		delete(object, "expected_close_date")
-	}
-
-	if raw, found := object["name"]; found {
-		err = json.Unmarshal(raw, &a.Name)
-		if err != nil {
-			return fmt.Errorf("error reading 'name': %w", err)
-		}
-		delete(object, "name")
-	}
-
-	if raw, found := object["owner_id"]; found {
-		err = json.Unmarshal(raw, &a.OwnerId)
-		if err != nil {
-			return fmt.Errorf("error reading 'owner_id': %w", err)
-		}
-		delete(object, "owner_id")
-	}
-
-	if raw, found := object["partner_attribution"]; found {
-		err = json.Unmarshal(raw, &a.PartnerAttribution)
-		if err != nil {
-			return fmt.Errorf("error reading 'partner_attribution': %w", err)
-		}
-		delete(object, "partner_attribution")
-	}
-
-	if raw, found := object["partner_company_id"]; found {
-		err = json.Unmarshal(raw, &a.PartnerCompanyId)
-		if err != nil {
-			return fmt.Errorf("error reading 'partner_company_id': %w", err)
-		}
-		delete(object, "partner_company_id")
-	}
-
-	if raw, found := object["pipeline_id"]; found {
-		err = json.Unmarshal(raw, &a.PipelineId)
-		if err != nil {
-			return fmt.Errorf("error reading 'pipeline_id': %w", err)
-		}
-		delete(object, "pipeline_id")
-	}
-
-	if raw, found := object["priority"]; found {
-		err = json.Unmarshal(raw, &a.Priority)
-		if err != nil {
-			return fmt.Errorf("error reading 'priority': %w", err)
-		}
-		delete(object, "priority")
-	}
-
-	if raw, found := object["project_id"]; found {
-		err = json.Unmarshal(raw, &a.ProjectId)
-		if err != nil {
-			return fmt.Errorf("error reading 'project_id': %w", err)
-		}
-		delete(object, "project_id")
-	}
-
-	if raw, found := object["source"]; found {
-		err = json.Unmarshal(raw, &a.Source)
-		if err != nil {
-			return fmt.Errorf("error reading 'source': %w", err)
-		}
-		delete(object, "source")
-	}
-
-	if raw, found := object["source_author_id"]; found {
-		err = json.Unmarshal(raw, &a.SourceAuthorId)
-		if err != nil {
-			return fmt.Errorf("error reading 'source_author_id': %w", err)
-		}
-		delete(object, "source_author_id")
-	}
-
-	if raw, found := object["source_author_name"]; found {
-		err = json.Unmarshal(raw, &a.SourceAuthorName)
-		if err != nil {
-			return fmt.Errorf("error reading 'source_author_name': %w", err)
-		}
-		delete(object, "source_author_name")
-	}
-
-	if raw, found := object["source_system"]; found {
-		err = json.Unmarshal(raw, &a.SourceSystem)
-		if err != nil {
-			return fmt.Errorf("error reading 'source_system': %w", err)
-		}
-		delete(object, "source_system")
-	}
-
-	if raw, found := object["stage_id"]; found {
-		err = json.Unmarshal(raw, &a.StageId)
-		if err != nil {
-			return fmt.Errorf("error reading 'stage_id': %w", err)
-		}
-		delete(object, "stage_id")
-	}
-
-	if len(object) != 0 {
-		a.AdditionalProperties = make(map[string]interface{})
-		for fieldName, fieldBuf := range object {
-			var fieldVal interface{}
-			err := json.Unmarshal(fieldBuf, &fieldVal)
-			if err != nil {
-				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
-			}
-			a.AdditionalProperties[fieldName] = fieldVal
-		}
-	}
-	return nil
-}
-
-// Override default JSON handling for CreateDealRequest to handle AdditionalProperties
-func (a CreateDealRequest) MarshalJSON() ([]byte, error) {
-	var err error
-	object := make(map[string]json.RawMessage)
-
-	if a.AcquisitionSource != nil {
-		object["acquisition_source"], err = json.Marshal(a.AcquisitionSource)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'acquisition_source': %w", err)
-		}
-	}
-
-	if a.AmountMinor != nil {
-		object["amount_minor"], err = json.Marshal(a.AmountMinor)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'amount_minor': %w", err)
-		}
-	}
-
-	if a.CommercialMotion != nil {
-		object["commercial_motion"], err = json.Marshal(a.CommercialMotion)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'commercial_motion': %w", err)
-		}
-	}
-
-	if a.CompanyId != nil {
-		object["company_id"], err = json.Marshal(a.CompanyId)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'company_id': %w", err)
-		}
-	}
-
-	if a.Currency != nil {
-		object["currency"], err = json.Marshal(a.Currency)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'currency': %w", err)
-		}
-	}
-
-	if a.Description != nil {
-		object["description"], err = json.Marshal(a.Description)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'description': %w", err)
-		}
-	}
-
-	if a.ExpectedArrMinor != nil {
-		object["expected_arr_minor"], err = json.Marshal(a.ExpectedArrMinor)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'expected_arr_minor': %w", err)
-		}
-	}
-
-	if a.ExpectedCloseDate != nil {
-		object["expected_close_date"], err = json.Marshal(a.ExpectedCloseDate)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'expected_close_date': %w", err)
-		}
-	}
-
-	object["name"], err = json.Marshal(a.Name)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'name': %w", err)
-	}
-
-	if a.OwnerId != nil {
-		object["owner_id"], err = json.Marshal(a.OwnerId)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'owner_id': %w", err)
-		}
-	}
-
-	if a.PartnerAttribution != nil {
-		object["partner_attribution"], err = json.Marshal(a.PartnerAttribution)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'partner_attribution': %w", err)
-		}
-	}
-
-	if a.PartnerCompanyId != nil {
-		object["partner_company_id"], err = json.Marshal(a.PartnerCompanyId)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'partner_company_id': %w", err)
-		}
-	}
-
-	object["pipeline_id"], err = json.Marshal(a.PipelineId)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'pipeline_id': %w", err)
-	}
-
-	if a.Priority != nil {
-		object["priority"], err = json.Marshal(a.Priority)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'priority': %w", err)
-		}
-	}
-
-	if a.ProjectId != nil {
-		object["project_id"], err = json.Marshal(a.ProjectId)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'project_id': %w", err)
-		}
-	}
-
-	object["source"], err = json.Marshal(a.Source)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'source': %w", err)
-	}
-
-	if a.SourceAuthorId != nil {
-		object["source_author_id"], err = json.Marshal(a.SourceAuthorId)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'source_author_id': %w", err)
-		}
-	}
-
-	if a.SourceAuthorName != nil {
-		object["source_author_name"], err = json.Marshal(a.SourceAuthorName)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'source_author_name': %w", err)
-		}
-	}
-
-	if a.SourceSystem != nil {
-		object["source_system"], err = json.Marshal(a.SourceSystem)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'source_system': %w", err)
-		}
-	}
-
-	object["stage_id"], err = json.Marshal(a.StageId)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'stage_id': %w", err)
-	}
-
-	for fieldName, field := range a.AdditionalProperties {
-		object[fieldName], err = json.Marshal(field)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
-		}
-	}
-	return json.Marshal(object)
 }
 
 // Getter for additional properties for Deal. Returns the specified

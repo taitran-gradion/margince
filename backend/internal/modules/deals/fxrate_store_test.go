@@ -12,7 +12,6 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	crmcontracts "github.com/margince/margince/backend/internal/contracts"
 	"github.com/margince/margince/backend/internal/shared/apperrors"
 	"github.com/margince/margince/backend/internal/shared/kernel/ids"
 	"github.com/margince/margince/backend/internal/shared/kernel/principal"
@@ -158,16 +157,6 @@ func TestEveryUninjectedInstallationSeamRefuses(t *testing.T) {
 					t.Fatalf("%s is nil after orRefusing; an un-injected seam must refuse, not panic", field)
 				}
 				_, err = seam(context.Background(), "k", func(any) int { return 1 })
-			case WrapCreate:
-				// Un-injected, it is core's own create, undecorated.
-				coreCreate := errors.New("core's create ran")
-				_, err = seam(func(context.Context, pgx.Tx, CreateDealInput) (crmcontracts.Deal, error) {
-					return crmcontracts.Deal{}, coreCreate
-				})(context.Background(), nil, CreateDealInput{})
-				if !errors.Is(err, coreCreate) {
-					t.Fatalf("%s did not run core's create unchanged: %v", field, err)
-				}
-				return
 			default:
 				t.Fatalf("%s is neither seam shape; teach this test how to call it", field)
 			}
