@@ -69,6 +69,11 @@ type unitManifest struct {
 	// Secrets has it: every manifest already in the tree predates the field.
 	Subscriptions []subscriptionRequest `json:"subscriptions,omitempty"`
 
+	// Decorates names the core services the unit wraps with its own logic,
+	// and Provides the ones it supplies (see extension.DealDecorator).
+	Decorates []string `json:"decorates,omitempty"`
+	Provides  []string `json:"provides,omitempty"`
+
 	// Ingress are the providers the unit brings records IN from (see
 	// extension.IngressSource). Like a subscription it carries no tier and no
 	// scope, and what it records is reach — but reach that leaves a permanent

@@ -22,6 +22,10 @@ type extensionUnit struct {
 	Name       string
 	Dir        string
 	ModulePath string
+	// GoDir is the folder holding the unit's one Go package: backend/ when the
+	// unit has one, else the module root. GoImport is that package's path.
+	GoDir    string
+	GoImport string
 	// Tables are the bare table names the unit's migrations declare, each
 	// already stripped of its ext_<namespace>_ prefix — the suffixes whose
 	// join with the namespace checkDerivedIdentifiers validates.
@@ -170,10 +174,14 @@ func scanUnit(name, dir string) (extensionUnit, error) {
 			return extensionUnit{}, fmt.Errorf("extensions/%s: %s/ composition is not built yet — the walking skeleton composes Go registrations only", name, sub)
 		}
 	}
-	if err := refuseNonRootGoPackages(name, dir); err != nil {
+	goDir, err := unitGoDir(dir)
+	if err != nil {
 		return extensionUnit{}, err
 	}
-	hasGo, err := hasRootGoFiles(dir)
+	if err := refuseNonRootGoPackages(name, dir, goDir); err != nil {
+		return extensionUnit{}, err
+	}
+	hasGo, err := hasRootGoFiles(goDir)
 	if err != nil {
 		return extensionUnit{}, err
 	}
@@ -205,7 +213,7 @@ func scanUnit(name, dir string) (extensionUnit, error) {
 	if mod.Module == nil || mod.Module.Mod.Path == "" {
 		return extensionUnit{}, fmt.Errorf("extensions/%s: go.mod declares no module path", name)
 	}
-	tables, hasMigrations, err := collectUnitTables(name, dir)
+	tables, hasMigrations, err := collectUnitTables(name, goDir)
 	if err != nil {
 		return extensionUnit{}, err
 	}
@@ -221,6 +229,8 @@ func scanUnit(name, dir string) (extensionUnit, error) {
 		Name:          name,
 		Dir:           dir,
 		ModulePath:    mod.Module.Mod.Path,
+		GoDir:         goDir,
+		GoImport:      goImportPath(mod.Module.Mod.Path, dir, goDir),
 		Tables:        tables,
 		HasMigrations: hasMigrations,
 		Fragments:     fragments,
@@ -282,7 +292,16 @@ func holdsOnlyInstalledOutput(dir string) (bool, error) {
 // layer with a composition (migrations/) is NOT exempt — it is ordinary unit
 // tree as far as Go packages are concerned, and an init() under it would run
 // exactly as unchecked as one anywhere else.
-func refuseNonRootGoPackages(name, dir string) error {
+func refuseNonRootGoPackages(name, dir, goDir string) error {
+	if goDir != dir {
+		rootGo, err := hasRootGoFiles(dir)
+		if err != nil {
+			return err
+		}
+		if rootGo {
+			return fmt.Errorf("extensions/%s: Go files at the unit root and in %s/ — a unit's Go is one package, in one of the two", name, backendLayer)
+		}
+	}
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return err
@@ -298,6 +317,9 @@ func refuseNonRootGoPackages(name, dir string) error {
 			}
 			if outsideModule(dir, path, d) {
 				return fs.SkipDir
+			}
+			if path == goDir {
+				return nil
 			}
 			hasGo, err := hasRootGoFiles(path)
 			if err != nil {
@@ -317,6 +339,46 @@ func refuseNonRootGoPackages(name, dir string) error {
 		}
 	}
 	return nil
+}
+
+// backendLayer is the folder a unit may keep its Go package in, beside api/
+// and frontend/, instead of the module root.
+const backendLayer = "backend"
+
+// unitGoDir is the unit's backend/ when it holds Go, else the module root.
+func unitGoDir(dir string) (string, error) {
+	backend := filepath.Join(dir, backendLayer)
+	if info, err := os.Stat(backend); err != nil || !info.IsDir() {
+		return dir, nil
+	}
+	hasGo, err := hasRootGoFiles(backend)
+	if err != nil || !hasGo {
+		return dir, err
+	}
+	return backend, nil
+}
+
+// goDir is the folder holding the unit's Go package.
+func (u extensionUnit) goDir() string {
+	if u.GoDir == "" {
+		return u.Dir
+	}
+	return u.GoDir
+}
+
+// importPath is the package the composition imports for the unit.
+func (u extensionUnit) importPath() string {
+	if u.GoImport == "" {
+		return u.ModulePath
+	}
+	return u.GoImport
+}
+
+func goImportPath(modulePath, dir, goDir string) string {
+	if goDir == dir {
+		return modulePath
+	}
+	return modulePath + "/" + backendLayer
 }
 
 func hasRootGoFiles(dir string) (bool, error) {

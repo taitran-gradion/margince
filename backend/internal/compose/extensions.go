@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/margince/margince/backend/internal/compose/installseam"
 	"github.com/margince/margince/backend/internal/modules/approvals"
 	"github.com/margince/margince/backend/internal/platform/jobs"
 	kevents "github.com/margince/margince/backend/internal/shared/kernel/events"
@@ -31,6 +32,9 @@ import (
 // operate on the declared set before anything is applied.
 func RegisterExtensions(exts []extension.Extension, verbs []extension.Verb, jobDecls []extension.JobDeclaration) error {
 	if err := validateExtensionSet(exts); err != nil {
+		return err
+	}
+	if err := refuseSecondDealScorer(exts); err != nil {
 		return err
 	}
 	if err := validateVerbSet(verbs); err != nil {
@@ -127,6 +131,7 @@ func RegisterExtensions(exts []extension.Extension, verbs []extension.Verb, jobD
 	setComposedTools(tools)
 	setComposedVerbs(verbs)
 	setComposedExtensions(exts)
+	installseam.SetDealCreateWrap(WrapDealCreate)
 	return nil
 }
 

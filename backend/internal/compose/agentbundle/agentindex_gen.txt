@@ -77,6 +77,7 @@ Every call a passport can make, grouped by area. Find the operationId in openapi
 | `GET /deals/slipping` | listSlippingDeals | The open deals going quiet or past their expected close date, worst first. | Read records | at once |
 | `GET /deals/at-risk` | listAtRiskRelationships | The open deals whose relationships are going cold, and why. | Read records | at once |
 | `POST /deals/follow-up-drafts` | draftDealFollowUps | Draft a follow-up on each slipping deal, worst first. Nothing is sent. | Draft messages | at once |
+| `GET /deals/{id}/score` | getDealScore | Score a deal with the scorer an installed extension provides. | Read records | at once |
 | `GET /deals/{id}` | getDeal | Get a deal by id (the 360 record). | Read records | at once |
 | `PATCH /deals/{id}` | updateDeal | Update a deal (partial). Closing is `POST /deals/{id}/advance`'s; a patch naming a closing field is refused 422 `set_by_advance`. | Change records | at once |
 | `DELETE /deals/{id}` | archiveDeal | Archive (soft-delete) a deal. | Change records | at once |

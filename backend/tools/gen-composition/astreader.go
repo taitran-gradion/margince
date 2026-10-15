@@ -51,7 +51,7 @@ func readUnitManifest(u extensionUnit, vocab map[string]string, verbs []declared
 	// ParseComments, because one of the declarations this reader has to judge
 	// lives in a comment: //go:embed binds a pattern to the var beneath it, and
 	// the Migrations field is checked against exactly that binding.
-	pkgs, err := parseDirByPackage(fset, u.Dir, parser.SkipObjectResolution|parser.ParseComments)
+	pkgs, err := parseDirByPackage(fset, u.goDir(), parser.SkipObjectResolution|parser.ParseComments)
 	if err != nil {
 		return unitManifest{}, fmt.Errorf("extensions/%s: %w", u.Name, err)
 	}
@@ -410,6 +410,10 @@ func (r *unitReader) readExtensionField(elt ast.Expr, file *ast.File, m *unitMan
 		if err == nil {
 			m.Subscriptions = append(m.Subscriptions, subs...)
 		}
+	case "DecorateDeals":
+		m.Decorates = append(m.Decorates, "deals")
+	case "ScoreDeals":
+		m.Provides = append(m.Provides, "deal_scorer")
 	case "Ingress":
 		var sources []ingressSource
 		sources, err = r.readIngress(kv.Value, file)

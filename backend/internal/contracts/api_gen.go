@@ -34824,6 +34824,16 @@ type DealRoomThreadListResponse struct {
 	Data []DealRoomThread `json:"data"`
 }
 
+// DealScore defines model for DealScore.
+type DealScore struct {
+	// Provider The extension that scored the deal.
+	Provider string `json:"provider"`
+
+	// Reason What the score rests on, in the provider's words.
+	Reason string `json:"reason"`
+	Score  int    `json:"score"`
+}
+
 // DealStatusCard Deal360 — the deal page's written briefing, the thing a rep reads in a
 // minute before a call.
 //
@@ -70590,6 +70600,9 @@ type ServerInterface interface {
 	// Read the buying roles out of what this deal's contacts have written.
 	// (POST /deals/{id}/role-proposals)
 	ProposeDealRoles(w http.ResponseWriter, r *http.Request, id Id)
+	// Score a deal with the scorer an installed extension provides.
+	// (GET /deals/{id}/score)
+	GetDealScore(w http.ResponseWriter, r *http.Request, id Id)
 	// What has been observed about this deal against its stage's criteria.
 	// (GET /deals/{id}/stage-evidence)
 	ListStageEvidence(w http.ResponseWriter, r *http.Request, id Id)
@@ -74382,6 +74395,12 @@ func (_ Unimplemented) ProgressDeal(w http.ResponseWriter, r *http.Request, id I
 // Read the buying roles out of what this deal's contacts have written.
 // (POST /deals/{id}/role-proposals)
 func (_ Unimplemented) ProposeDealRoles(w http.ResponseWriter, r *http.Request, id Id) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Score a deal with the scorer an installed extension provides.
+// (GET /deals/{id}/score)
+func (_ Unimplemented) GetDealScore(w http.ResponseWriter, r *http.Request, id Id) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -95355,6 +95374,40 @@ func (siw *ServerInterfaceWrapper) ProposeDealRoles(w http.ResponseWriter, r *ht
 	handler.ServeHTTP(w, r)
 }
 
+// GetDealScore operation middleware
+func (siw *ServerInterfaceWrapper) GetDealScore(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	ctx = context.WithValue(ctx, CookieAuthScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetDealScore(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListStageEvidence operation middleware
 func (siw *ServerInterfaceWrapper) ListStageEvidence(w http.ResponseWriter, r *http.Request) {
 
@@ -113969,6 +114022,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/deals/{id}/role-proposals", wrapper.ProposeDealRoles)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/deals/{id}/score", wrapper.GetDealScore)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/deals/{id}/stage-evidence", wrapper.ListStageEvidence)

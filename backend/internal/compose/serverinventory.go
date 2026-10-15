@@ -126,6 +126,7 @@ type Server struct {
 	captureCounterpartyHoldHandlers
 	claimHandlers
 	dealCommitmentHandlers
+	dealScoreHandlers
 	importHandlers
 	channelHandlers
 	traceHandlers

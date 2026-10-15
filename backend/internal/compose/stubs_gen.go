@@ -1707,6 +1707,10 @@ func (stubs) ProposeDealRoles(w nethttp.ResponseWriter, r *nethttp.Request, id c
 	httperr.NotImplemented(w, r, "ProposeDealRoles")
 }
 
+func (stubs) GetDealScore(w nethttp.ResponseWriter, r *nethttp.Request, id crmcontracts.Id) {
+	httperr.NotImplemented(w, r, "GetDealScore")
+}
+
 func (stubs) ListStageEvidence(w nethttp.ResponseWriter, r *nethttp.Request, id crmcontracts.Id) {
 	httperr.NotImplemented(w, r, "ListStageEvidence")
 }

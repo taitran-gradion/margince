@@ -352,10 +352,10 @@ func extensionsGen(units []extensionUnit, verbs []declaredVerb, jobDecls []exten
 			order[i] = i
 		}
 		sort.SliceStable(order, func(a, b int) bool {
-			return units[order[a]].ModulePath < units[order[b]].ModulePath
+			return units[order[a]].importPath() < units[order[b]].importPath()
 		})
 		for _, i := range order {
-			fmt.Fprintf(&b, "\text%d %q\n", i, units[i].ModulePath)
+			fmt.Fprintf(&b, "\text%d %q\n", i, units[i].importPath())
 		}
 	}
 	b.WriteString(")\n")
