@@ -297,3 +297,23 @@ func TestExtScreensGenIsOrderedByUnitName(t *testing.T) {
 		t.Errorf("imports are not in unit order:\n%s", got)
 	}
 }
+
+// A unit's screens.tsx joins core's custom screens; a unit without one adds
+// nothing to that list.
+func TestExtScreensGenCollectsEachUnitsCustomScreens(t *testing.T) {
+	got := string(extScreensGen([]extensionUnit{
+		{Name: "acme-greeting", Frontend: &unitFrontend{Package: "@margince-ext/acme-greeting", Export: "@margince-ext/acme-greeting", CustomScreens: "@margince-ext/acme-greeting/screens"}},
+		{Name: "notes", Frontend: &unitFrontend{Package: "@margince-ext/notes", Export: "@margince-ext/notes"}},
+	}))
+	for _, want := range []string{
+		`import { screens as AcmeGreetingCustomScreens } from "@margince-ext/acme-greeting/screens";`,
+		`export const extensionCustomScreens = [...AcmeGreetingCustomScreens];`,
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("emitted registry is missing %q:\n%s", want, got)
+		}
+	}
+	if strings.Contains(got, "NotesCustomScreens") {
+		t.Errorf("a unit without screens.tsx must add no custom screens:\n%s", got)
+	}
+}

@@ -118,25 +118,10 @@ func TestOverrideRefusals(t *testing.T) {
 	}
 }
 
-func TestUnitAddsAScreenToCoresCustomFolderWithoutALock(t *testing.T) {
+func TestOverrideOfAFileCoreDoesNotHaveIsRefused(t *testing.T) {
 	root := t.TempDir()
 	dir := filepath.Join(root, "units", "acme")
-	writeFile(t, filepath.Join(dir, overridesLayer, "src/screens/custom/acme/screen.tsx"), "export const screen = {};\n")
-	writeFile(t, filepath.Join(dir, overridesLayer, "src/screens/custom/acme/panel.tsx"), "export {};\n")
-
-	got, err := collectOverrides(root, []extensionUnit{{Name: "acme", Dir: dir}})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(got) != 1 || !got[0].Mount || got[0].Target != "src/screens/custom/acme/screen.tsx" {
-		t.Fatalf("got %+v, want only screen.tsx mounted; panel.tsx is reached by its import", got)
-	}
-}
-
-func TestAFileCoreLacksOutsideCustomIsStillRefused(t *testing.T) {
-	root := t.TempDir()
-	dir := filepath.Join(root, "units", "acme")
-	writeFile(t, filepath.Join(dir, overridesLayer, "src/screens/acme/screen.tsx"), "")
+	writeFile(t, filepath.Join(dir, overridesLayer, "src/screens/custom/acme/screen.tsx"), "")
 
 	_, err := collectOverrides(root, []extensionUnit{{Name: "acme", Dir: dir}})
 	if err == nil || !strings.Contains(err.Error(), "which this core does not have") {

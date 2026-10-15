@@ -12,3 +12,5 @@
 // published-operations card, which is what a unit with no bespoke screen gets.
 
 export const extensionScreens = {};
+
+export const extensionCustomScreens: readonly never[] = [];

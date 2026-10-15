@@ -38,7 +38,6 @@ type FileOverride = {
   unit: string;
   target: string;
   source: string;
-  mount?: boolean;
 };
 const overridesFile = join(
   frontendRoot,
@@ -53,51 +52,17 @@ const fileOverrides: FileOverride[] =
     ? JSON.parse(readFileSync(overridesFile, "utf8"))
     : [];
 
-// app/custom.ts collects core's custom/ screens with this one glob, so a
-// mounted screen is added beside it; a change to the line fails the build.
-const customRegistry = join(frontendRoot, "src", "app", "custom.ts");
-const customGlob =
-  /const declared = (import\.meta\.glob<[^>]+>\(\s*"\.\.\/screens\/custom\/\*\/screen\.tsx",\s*\{ eager: true \},?\s*\));/;
-
-function withMountedScreens(
-  code: string,
-  mounts: readonly FileOverride[],
-): string {
-  if (!customGlob.test(code)) {
-    throw new Error(
-      `${customRegistry} no longer collects screens the way mounted unit screens expect`,
-    );
-  }
-  const imports = mounts.map(
-    (m, i) => `import * as mountedScreen${i} from ${JSON.stringify(m.source)};`,
-  );
-  const entries = mounts.map(
-    (m, i) => `${JSON.stringify(m.target)}: mountedScreen${i}`,
-  );
-  return code.replace(
-    customGlob,
-    `${imports.join("\n")}\nconst declared = { ...$1, ${entries.join(", ")} };`,
-  );
-}
-
 // Resolves every import of an overridden core file to the unit's file instead,
 // whatever specifier reached it. "@core-original/<path>" always means core's
 // own file, so an override can wrap the component it replaces.
 function overrideCoreFiles(): Plugin {
-  const replaced = fileOverrides.filter((o) => !o.mount);
-  const mounted = fileOverrides.filter((o) => o.mount);
   const byTarget = new Map(
-    replaced.map((o) => [resolve(frontendRoot, o.target), o.source]),
+    fileOverrides.map((o) => [resolve(frontendRoot, o.target), o.source]),
   );
   const coreOriginal = "@core-original/";
   return {
     name: "margince-core-overrides",
     enforce: "pre",
-    transform(code, id) {
-      return mounted.length > 0 && id === customRegistry
-        ? withMountedScreens(code, mounted)
-        : null;
-    },
     async resolveId(source, importer, options) {
       if (source.startsWith(coreOriginal)) {
         return this.resolve(
@@ -258,9 +223,13 @@ export default defineConfig({
         replacement: "$1",
         // One link per enabled unit, written by gen-composition, wherever the
         // unit lives: extensions/, build/extensions/ or a local folder.
-        customResolver: (unit) => {
+        // `@margince-ext/<unit>` is the package's main; `@margince-ext/<unit>/screens`
+        // its screens.tsx, which joins core's custom screens.
+        customResolver: (specifier) => {
+          const [unit, subpath] = specifier.split(/\/(.*)/s);
           const layer = join(unitScreensDir, unit);
           if (!existsSync(layer)) return null;
+          if (subpath) return join(realpathSync(layer), `${subpath}.tsx`);
           const pkg = JSON.parse(
             readFileSync(join(layer, "package.json"), "utf8"),
           );

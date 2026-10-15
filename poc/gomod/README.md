@@ -96,20 +96,27 @@ All three: yes. Run `bash poc/gomod/run.sh` from the repository root to see it.
 10. **`replace` in `extensions.mod` is refused for now.** A local unit is
     still developed under `extensions/`.
 
-## Overriding and adding core screen files
+## Adding screens and replacing core screen files
 
-A unit can change a core screen without core declaring a slot. Its
-`frontend/overrides/` tree mirrors core's `frontend/`:
+A unit adds a page of its own the way core expects one, and replaces a core
+file only when no such way exists.
 
-- **Replace a file.** `frontend/overrides/src/screens/deal360/dealheaderfacts.tsx`
-  stands in for core's file of that path, for every importer. The unit's file
-  reaches core's own copy as `@core-original/src/screens/deal360/dealheaderfacts`,
-  so it can wrap the component instead of copying it.
-- **Add a screen.** A `src/screens/custom/<folder>/screen.tsx` that core does not
-  have is added to core's custom screen registry (`app/custom.ts`). A screen whose
-  `nav.group` is `records` gets a sidebar row after Deals.
+**Adding a screen.** A unit's frontend package may ship `screens.tsx`, which
+exports `screens: readonly CustomScreen[]`. `CustomScreen` comes from
+`@margince/frontend/app`. `gen-composition` imports each unit's list into
+`extscreens.gen.ts`, and `app/custom.ts` adds it to the registry that core's
+own `src/screens/custom/` folder fills. Each screen gets `#/x/<key>`, and a
+`nav.group` of `records` gives it a sidebar row after Deals. It is an ordinary
+file of the unit, checked by the composed typecheck like the rest of its
+package.
 
-`gen-composition` refuses what it cannot stand behind:
+**Replacing a file.** A unit's `frontend/overrides/` tree mirrors core's
+`frontend/`. `frontend/overrides/src/screens/deal360/dealheaderfacts.tsx` stands
+in for core's file of that path, for every importer. The unit's file reaches
+core's own copy as `@core-original/src/screens/deal360/dealheaderfacts`, so it
+can wrap the component instead of copying it.
+
+`gen-composition` refuses a replacement it cannot stand behind:
 
 | Refusal | Why |
 |---|---|
@@ -117,12 +124,11 @@ A unit can change a core screen without core declaring a slot. Its
 | A lock hash that no longer matches core's file | Core changed the file, so the override has to be read again |
 | Two units replacing one file | One file has one owner |
 | A file outside `src/screens/` | The API client, auth and generated files stay core's |
-| A missing core file outside `src/screens/custom/` | Only that folder takes new files |
+| A file core does not have | An override replaces; a new page is a `screens.tsx` entry |
 
 `build/composition-frontend/overrides.check.ts` makes the composed typecheck
-hold each replacement to every export of the file it replaces, and each added
-screen to the `CustomScreen` type. The Vite plugin `margince-core-overrides`
-applies both, in the composed lane only.
+hold each replacement to every export of the file it replaces. The Vite plugin
+`margince-core-overrides` applies replacements in the composed lane only.
 
 The cost is that every file under `src/screens/` becomes something a unit can
 depend on. The lock turns a core change into a build failure instead of a

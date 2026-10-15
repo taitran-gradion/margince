@@ -19,6 +19,11 @@ import (
 // frontendLayer is the unit subdirectory holding its screen package.
 const frontendLayer = "frontend"
 
+// customScreensModule is the file in a unit's frontend layer whose `screens`
+// export joins core's custom screens (app/custom.ts). Each screen gets its own
+// address and, if it asks, a sidebar row.
+const customScreensModule = "screens"
+
 // extPackagePrefix namespaces a unit's npm package the way ext_ namespaces its
 // tables, its RBAC objects and its job kinds. One workspace holds every enabled
 // unit, so the prefix is what keeps two of them from colliding — and it makes a
@@ -50,6 +55,9 @@ type unitFrontend struct {
 	// subpath would change one and not the other.
 	Package string
 	Export  string
+	// CustomScreens is the specifier of the unit's customScreensModule, empty
+	// when it ships none.
+	CustomScreens string
 }
 
 // unitPackageJSON is the subset of a package manifest this composer judges.
@@ -131,7 +139,11 @@ func collectUnitFrontend(name, dir string) (*unitFrontend, error) {
 		return nil, fmt.Errorf("extensions/%s: %s/%s does not exist, and it is the module the composed registry imports",
 			name, frontendLayer, pkg.Main)
 	}
-	return &unitFrontend{Package: pkg.Name, Export: pkg.Name}, nil
+	front := &unitFrontend{Package: pkg.Name, Export: pkg.Name}
+	if _, err := os.Stat(filepath.Join(layerDir, customScreensModule+".tsx")); err == nil {
+		front.CustomScreens = pkg.Name + "/" + customScreensModule
+	}
+	return front, nil
 }
 
 // screenIdent turns a unit name into the JavaScript identifier the generated

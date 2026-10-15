@@ -1,5 +1,6 @@
 /** @vitest-environment happy-dom */
 import { cleanup, screen } from "@testing-library/react";
+import { NotebookPen } from "lucide-react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Heading } from "./design-system/heading";
 import {
@@ -68,6 +69,14 @@ vi.mock("@composition/screens", () => ({
     // descriptor lookup is the gate, and an entry here is not one.
     "crm-ghost": () => <Heading size="xlarge">Ghost</Heading>,
   },
+  // A unit's screens.tsx: its own address under #/x and a row in Records.
+  extensionCustomScreens: [
+    {
+      key: "notes-desk",
+      component: () => <p>Notes desk body</p>,
+      nav: { group: "records", label: { en: "Notes desk" }, icon: NotebookPen },
+    },
+  ],
 }));
 
 beforeEach(() => {
@@ -83,6 +92,17 @@ afterEach(() => {
 });
 
 describe("extension routes (composed screen registry)", () => {
+  it("serves a unit's own custom screen at its address, titled and listed in the sidebar", async () => {
+    window.location.hash = "#/x/notes-desk";
+    renderApp();
+    expect(await screen.findByText("Notes desk body")).toBeTruthy();
+    expect(
+      await screen.findByRole("heading", { name: "Notes desk", level: 1 }),
+    ).toBeTruthy();
+    expect(
+      screen.getAllByRole("link", { name: "Notes desk" }).length,
+    ).toBeGreaterThan(0);
+  });
   it("renders the unit's own screen in place of the descriptor card", async () => {
     window.location.hash = "#/ext/notes";
     renderApp();

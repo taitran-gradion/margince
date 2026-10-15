@@ -138,6 +138,7 @@ func frontendGen(manifests []derivedManifest, verbs []declaredVerb, merged map[s
 // the filesystem happened to hand directories over.
 func extScreensGen(units []extensionUnit) []byte {
 	var imports, entries strings.Builder
+	var custom []string
 	for _, u := range units {
 		if u.Frontend == nil {
 			continue
@@ -145,17 +146,28 @@ func extScreensGen(units []extensionUnit) []byte {
 		ident := screenIdent(u.Name)
 		fmt.Fprintf(&imports, "import %s from %s;\n", ident, tsString(u.Frontend.Export))
 		fmt.Fprintf(&entries, "  %s: %s,\n", tsString(u.Name), ident)
+		if u.Frontend.CustomScreens != "" {
+			customIdent := unitCamel(u.Name) + "CustomScreens"
+			fmt.Fprintf(&imports, "import { screens as %s } from %s;\n", customIdent, tsString(u.Frontend.CustomScreens))
+			custom = append(custom, "..."+customIdent)
+		}
 	}
 	var b strings.Builder
 	b.WriteString(extScreensGenHeader)
 	b.WriteString(imports.String())
 	if entries.Len() == 0 {
 		b.WriteString("\nexport const extensionScreens = {};\n")
-		return []byte(b.String())
+	} else {
+		b.WriteString("\nexport const extensionScreens = {\n")
+		b.WriteString(entries.String())
+		b.WriteString("};\n")
 	}
-	b.WriteString("\nexport const extensionScreens = {\n")
-	b.WriteString(entries.String())
-	b.WriteString("};\n")
+	// Each unit's own screens for app/custom.ts, which types them as it reads.
+	if len(custom) == 0 {
+		b.WriteString("\nexport const extensionCustomScreens: readonly never[] = [];\n")
+	} else {
+		fmt.Fprintf(&b, "\nexport const extensionCustomScreens = [%s];\n", strings.Join(custom, ", "))
+	}
 	return []byte(b.String())
 }
 

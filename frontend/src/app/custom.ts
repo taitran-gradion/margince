@@ -1,3 +1,4 @@
+import { extensionCustomScreens } from "@composition/screens";
 import type { LucideIcon } from "lucide-react";
 import type { ComponentType } from "react";
 import type { Locale } from "../i18n";
@@ -152,7 +153,20 @@ export type CustomScreenRegistry = ReadonlyMap<string, CustomScreen>;
  * is a fork's, and a work-in-progress file there must not stop the product
  * compiling.
  */
-export const customScreens: CustomScreenRegistry = buildRegistry(declared);
+export const customScreens: CustomScreenRegistry = buildRegistry({
+  ...declared,
+  ...unitScreenModules(extensionCustomScreens),
+});
+
+// A composed unit's own screens (its frontend's screens.tsx), keyed so a clash
+// with a fork screen or another unit's names the unit.
+function unitScreenModules(
+  screens: readonly CustomScreen[],
+): Record<string, { readonly screen: CustomScreen }> {
+  return Object.fromEntries(
+    screens.map((screen) => [`extension screen ${screen.key}`, { screen }]),
+  );
+}
 
 /**
  * The registry, refusing a key claimed twice.
