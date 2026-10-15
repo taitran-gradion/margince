@@ -29,7 +29,7 @@ const compositionModulePath = "github.com/margince/margince/composition"
 func extensionTrees(t *testing.T) map[string]string {
 	t.Helper()
 	trees := map[string]string{}
-	for _, root := range []string{"../extensions", "../fixtures/extensions"} {
+	for _, root := range []string{"../extensions", "../build/extensions", "../fixtures/extensions"} {
 		entries, err := os.ReadDir(root)
 		if os.IsNotExist(err) {
 			continue

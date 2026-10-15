@@ -41,6 +41,9 @@ type extensionUnit struct {
 	// common case, and not an error. The composed screen registry imports it
 	// by package name.
 	Frontend *unitFrontend
+	// Fetched marks a unit extensions.mod brought in, copied under
+	// build/extensions/. Its shipped manifest is checked, never rewritten.
+	Fetched bool
 }
 
 // scanExtensions reads the enabled set. A capability layer this composer
@@ -49,7 +52,40 @@ type extensionUnit struct {
 // none left today (unbuiltCapabilityLayers is empty); the rule outlives the
 // list.
 func scanExtensions(root string) ([]extensionUnit, error) {
-	entries, err := os.ReadDir(filepath.Join(root, "extensions"))
+	var units []extensionUnit
+	seen := map[string]string{}
+	for _, unitRoot := range []string{"extensions", fetchedUnitsDir} {
+		found, err := scanUnitRoot(root, unitRoot)
+		if err != nil {
+			return nil, err
+		}
+		for _, u := range found {
+			if other, dup := seen[u.Name]; dup {
+				return nil, fmt.Errorf("unit %q is both %s/%s and %s/%s — one name, one unit", u.Name, other, u.Name, unitRoot, u.Name)
+			}
+			seen[u.Name] = unitRoot
+		}
+		units = append(units, found...)
+	}
+	sort.Slice(units, func(i, j int) bool { return units[i].Name < units[j].Name })
+	// The cross-unit check runs HERE, over the sorted whole set, because
+	// this is the only place in the build that sees every unit at once: a
+	// derived-identifier collision belongs to no single unit's tree, and no
+	// unit can see the other's tables to find it.
+	tables := make([]unitTables, 0, len(units))
+	for _, u := range units {
+		tables = append(tables, unitTables{name: u.Name, tables: u.Tables})
+	}
+	if err := checkDerivedIdentifiers(tables); err != nil {
+		return nil, err
+	}
+	return units, nil
+}
+
+// scanUnitRoot reads one folder of units: the installation's own
+// (extensions/) or the ones extensions.mod fetched (build/extensions/).
+func scanUnitRoot(root, unitRoot string) ([]extensionUnit, error) {
+	entries, err := os.ReadDir(filepath.Join(root, filepath.FromSlash(unitRoot)))
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, nil
@@ -73,24 +109,13 @@ func scanExtensions(root string) ([]extensionUnit, error) {
 		if err := extension.Name(name).Validate(); err != nil {
 			return nil, fmt.Errorf("extensions/%s: %w", name, err)
 		}
-		dir := filepath.Join(root, "extensions", name)
+		dir := filepath.Join(root, filepath.FromSlash(unitRoot), name)
 		unit, err := scanUnit(name, dir)
 		if err != nil {
 			return nil, err
 		}
+		unit.Fetched = unitRoot == fetchedUnitsDir
 		units = append(units, unit)
-	}
-	sort.Slice(units, func(i, j int) bool { return units[i].Name < units[j].Name })
-	// The cross-unit check runs HERE, over the sorted whole set, because
-	// this is the only place in the build that sees every unit at once: a
-	// derived-identifier collision belongs to no single unit's tree, and no
-	// unit can see the other's tables to find it.
-	tables := make([]unitTables, 0, len(units))
-	for _, u := range units {
-		tables = append(tables, unitTables{name: u.Name, tables: u.Tables})
-	}
-	if err := checkDerivedIdentifiers(tables); err != nil {
-		return nil, err
 	}
 	return units, nil
 }
