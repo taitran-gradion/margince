@@ -156,8 +156,12 @@ func fileSHA256(file string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	return bytesSHA256(raw), nil
+}
+
+func bytesSHA256(raw []byte) string {
 	sum := sha256.Sum256(raw)
-	return "sha256:" + hex.EncodeToString(sum[:]), nil
+	return "sha256:" + hex.EncodeToString(sum[:])
 }
 
 // emitOverrides writes the bundler's map and the type check, replacing both so

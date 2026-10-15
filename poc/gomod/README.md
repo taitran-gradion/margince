@@ -136,25 +136,37 @@ depend on. The lock turns a core change into a build failure instead of a
 silent one. It cannot tell whether a change matters, so each core release asks
 the unit's author to read every file it replaces again.
 
-## Decorating and providing backend services
+## Four levels of reach on the backend
 
-A unit changes core's backend logic through declared fields on its
-`extension.Extension`, each derived into its manifest so an operator sees it.
+A unit uses the lowest level that does its job. Every level is derived into
+its manifest (`provides`, `write_hooks`, `operation_hooks`, `overlays`), so an
+operator sees what a unit touches before turning it on.
 
-- `DecorateDeals` wraps core's `extension.DealService`. A decorator may refuse a
-  create, change its name, description or priority, call `next`, and then write
-  its own rows. Its `Runtime.Tx` joins the deal's transaction, so its failure
-  rolls the deal back. Every create reaches it, because the deals store runs
-  `createDealInTx` through `deals.Installation.WrapCreate`, which compose fills.
-- `ScoreDeals` provides a `DealScorer`, a service core has no implementation
-  of. `GET /deals/{id}/score` reads the deal under the caller's row scope and
-  asks the one provider. Without one it answers 404 `no_deal_scorer`, and two
-  providers refuse to boot.
+| Level | Declared as | Runs | Can | Per-service work in core |
+|---|---|---|---|---|
+| 1. Capability | `Tools`, `Subscriptions`, `ScoreDeals`, frontend `screens` | runtime | add routes, pages, and services core asks for | one field per capability |
+| 2. Write hook | `WriteHooks` | after an audited write, in its transaction | refuse the write, or add the unit's rows atomically | none |
+| 3. Operation hook | `OperationHooks` | before a contract operation | change or refuse the request body | none |
+| 4. Overlay | `backend/overlays/` | compile time | wrap or replace any core function | none |
+
+- **Write hooks** run from `storekit`'s audit writer, which every module's
+  write passes. A hook gets the audit row's images and a runtime whose `Tx`
+  joins the write's transaction. A unit's own `ext_*` rows run no hooks.
+- **Operation hooks** run as operation middleware on the contract router. The
+  operation is named by `agentPolicies`, the generated route table the agent
+  gate also reads. Core reads a changed body as if the caller had sent it.
+- **Overlays**: a file in `backend/overlays/<core package>/` carries
+  `//go:build margince_overlay`, so the unit's own build leaves it out. A
+  function in it marked `//margince:decorate` replaces core's function of the
+  same name. `gen-composition` renames core's to `<name>__core` in a copy of
+  its file and writes `build/overlay/overlay.json` for `go build -overlay`.
+  `backend/overlays.lock` pins each decorated function by the hash of its
+  source, so a core change to that function stops the build. Only an
+  installation's own folder may ship overlays; a fetched unit is refused.
 
 A unit may keep its Go package in `backend/` beside `api/` and `frontend/`,
-with its migrations in `backend/migrations/` next to the code that embeds them.
-The composition imports `<module>/backend`. A unit has one Go package, at the
-root or in `backend/`, so the declaration reader checks all of its Go code.
+with `backend/migrations/` and `backend/overlays/` beside it. The composition
+imports `<module>/backend`.
 
 ## Not covered
 

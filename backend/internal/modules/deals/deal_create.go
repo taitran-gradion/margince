@@ -99,7 +99,7 @@ func (s *Store) CreateDeal(ctx context.Context, in CreateDealInput) (crmcontract
 	var out crmcontracts.Deal
 	err = s.Tx(ctx, func(tx pgx.Tx) error {
 		var err error
-		out, err = s.createDecorated(ctx, tx, in, born, active)
+		out, err = s.createDealInTx(ctx, tx, in, born, active)
 		return err
 	})
 	return out, err
@@ -122,7 +122,7 @@ func (s *Store) CreateDealTx(ctx context.Context, tx pgx.Tx, in CreateDealInput,
 	if err != nil {
 		return crmcontracts.Deal{}, err
 	}
-	return s.createDecorated(ctx, tx, in, born, cols.cols)
+	return s.createDealInTx(ctx, tx, in, born, cols.cols)
 }
 
 // bornDeal is what a create settles before any transaction opens: who is
@@ -307,24 +307,6 @@ func (s *Store) clearedForBirth(ctx context.Context, tx pgx.Tx, in CreateDealInp
 		}
 	}
 	return in, nil
-}
-
-// CreateInTx creates one deal inside the caller's transaction: core's own
-// create, or that create as an extension decorated it.
-type CreateInTx func(ctx context.Context, tx pgx.Tx, in CreateDealInput) (crmcontracts.Deal, error)
-
-// WrapCreate returns the create an extension puts around next. It may refuse,
-// change the input, call next, and write more in the same transaction.
-type WrapCreate func(next CreateInTx) CreateInTx
-
-// createDecorated runs core's create through the installation's WrapCreate,
-// which is core's create itself when nothing decorates it.
-// born and active were settled for the input as the caller sent it.
-func (s *Store) createDecorated(ctx context.Context, tx pgx.Tx, in CreateDealInput, born bornDeal, active []fieldcatalog.Column) (crmcontracts.Deal, error) {
-	create := s.installation.WrapCreate(func(ctx context.Context, tx pgx.Tx, in CreateDealInput) (crmcontracts.Deal, error) {
-		return s.createDealInTx(ctx, tx, in, born, active)
-	})
-	return create(ctx, tx, in)
 }
 
 // createDealInTx clears the birth gates, inserts the deal with its first

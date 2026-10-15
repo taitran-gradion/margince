@@ -192,7 +192,7 @@ func generate(root string) error {
 	if err := linkUnitScreens(root, units); err != nil {
 		return err
 	}
-	if err := composeOverrides(root, units); err != nil {
+	if err := composeReplacements(root, units); err != nil {
 		return err
 	}
 	m, err := currentManifest(root, composed.Files)
