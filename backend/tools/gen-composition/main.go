@@ -34,9 +34,10 @@ import (
 )
 
 var (
-	rootPath     = flag.String("root", "..", "repository root (the directory holding extensions/ and build/)")
-	verify       = flag.Bool("verify", false, "regenerate in memory and compare against composition.json and the files on disk; write nothing")
-	verifyInputs = flag.Bool("verify-inputs", false, "recompute input digests only and compare against composition.json; write nothing")
+	rootPath      = flag.String("root", "..", "repository root (the directory holding extensions/ and build/)")
+	verify        = flag.Bool("verify", false, "regenerate in memory and compare against composition.json and the files on disk; write nothing")
+	verifyInputs  = flag.Bool("verify-inputs", false, "recompute input digests only and compare against composition.json; write nothing")
+	extensionsMod = flag.String("extensions-mod", "", "the installation's extensions.mod, when it lives outside the repository root; its extensions.sum sits beside it")
 )
 
 // genMode is the tool's three mutually exclusive operations; when both
@@ -137,7 +138,7 @@ func generate(root string) error {
 	if err := stubMatchesVanilla(root); err != nil {
 		return err
 	}
-	if err := fetchRequiredUnits(root); err != nil {
+	if err := fetchRequiredUnits(root, *extensionsMod); err != nil {
 		return err
 	}
 	// The manifests are derived from the merged contracts, so composedFiles
@@ -190,6 +191,13 @@ func generate(root string) error {
 		unitDirs = append(unitDirs, filepath.ToSlash(rel))
 	}
 	if err := emitComposedFrontendWorkspace(filepath.Join(root, filepath.FromSlash(composedFrontendWorkspaceDir)), unitDirs); err != nil {
+		return err
+	}
+	units := make([]extensionUnit, 0, len(composed.Manifests))
+	for _, m := range composed.Manifests {
+		units = append(units, m.Unit)
+	}
+	if err := linkUnitScreens(root, units); err != nil {
 		return err
 	}
 	m, err := currentManifest(root, composed.Files)

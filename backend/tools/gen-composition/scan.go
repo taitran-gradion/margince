@@ -67,6 +67,21 @@ func scanExtensions(root string) ([]extensionUnit, error) {
 		}
 		units = append(units, found...)
 	}
+	local, err := readLocalUnits(root)
+	if err != nil {
+		return nil, err
+	}
+	for _, l := range local {
+		if other, dup := seen[l.name]; dup {
+			return nil, fmt.Errorf("unit %q is both %s/%s and the local folder %s — one name, one unit", l.name, other, l.name, l.dir)
+		}
+		seen[l.name] = l.dir
+		unit, err := scanUnit(l.name, l.dir)
+		if err != nil {
+			return nil, err
+		}
+		units = append(units, unit)
+	}
 	sort.Slice(units, func(i, j int) bool { return units[i].Name < units[j].Name })
 	// The cross-unit check runs HERE, over the sorted whole set, because
 	// this is the only place in the build that sees every unit at once: a
@@ -280,6 +295,9 @@ func refuseNonRootGoPackages(name, dir string) error {
 		err := filepath.WalkDir(sub, func(path string, d fs.DirEntry, err error) error {
 			if err != nil || !d.IsDir() {
 				return err
+			}
+			if outsideModule(dir, path, d) {
+				return fs.SkipDir
 			}
 			hasGo, err := hasRootGoFiles(path)
 			if err != nil {

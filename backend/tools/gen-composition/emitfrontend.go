@@ -391,3 +391,29 @@ func emitComposedFrontendWorkspace(dir string, unitDirs []string) error {
 	}
 	return os.WriteFile(filepath.Join(dir, "pnpm-workspace.yaml"), []byte(b.String()), 0o644) // #nosec G306 -- generated build artifact
 }
+
+// composedUnitScreensDir holds one link per enabled unit that ships a screen,
+// named by the unit, so the SPA resolves `@margince-ext/<unit>` in one place
+// wherever the unit lives: extensions/, build/extensions/ or a local folder.
+const composedUnitScreensDir = "build/composition-frontend/units"
+
+// linkUnitScreens replaces the link set, so a unit no longer enabled leaves no
+// link the bundler would still resolve.
+func linkUnitScreens(root string, units []extensionUnit) error {
+	dir := filepath.Join(root, filepath.FromSlash(composedUnitScreensDir))
+	if err := os.RemoveAll(dir); err != nil {
+		return err
+	}
+	if err := os.MkdirAll(dir, 0o755); err != nil { // #nosec G301 -- build output stays readable to another UID
+		return err
+	}
+	for _, u := range units {
+		if u.Frontend == nil {
+			continue
+		}
+		if err := os.Symlink(filepath.Join(u.Dir, frontendLayer), filepath.Join(dir, u.Name)); err != nil {
+			return fmt.Errorf("linking %s's screen: %w", u.Name, err)
+		}
+	}
+	return nil
+}
