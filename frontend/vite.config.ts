@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, realpathSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import tailwindcss from "@tailwindcss/vite";
@@ -16,6 +16,12 @@ import { TEST_TIMEOUT_MS } from "./vitest.budget.ts";
 // invoked. Composed: MARGINCE_COMPOSITION_FRONTEND names the generated
 // directory, exactly as GOWORK names the generated workspace for the Go lane.
 const frontendRoot = fileURLToPath(new URL(".", import.meta.url));
+const unitScreensDir = join(frontendRoot, "..", "build", "composition-frontend", "units");
+// Where each enabled unit's screen really is: a local unit sits outside this
+// repository, and the dev server serves only folders it was told about.
+const unitScreenDirs = existsSync(unitScreensDir)
+  ? readdirSync(unitScreensDir).map((unit) => realpathSync(join(unitScreensDir, unit)))
+  : [];
 const composedComposition = process.env.MARGINCE_COMPOSITION_FRONTEND;
 const compositionDir = composedComposition
   ? resolve(composedComposition)
@@ -148,14 +154,13 @@ export default defineConfig({
       {
         find: /^@margince-ext\/(.+)$/,
         replacement: "$1",
-        // The installation's own units, then the ones extensions.mod fetched.
+        // One link per enabled unit, written by gen-composition, wherever the
+        // unit lives: extensions/, build/extensions/ or a local folder.
         customResolver: (unit) => {
-          const layer = [join("extensions", unit), join("build", "extensions", unit)]
-            .map((dir) => join(frontendRoot, "..", dir, "frontend"))
-            .find((dir) => existsSync(dir));
-          if (!layer) return null;
+          const layer = join(unitScreensDir, unit);
+          if (!existsSync(layer)) return null;
           const pkg = JSON.parse(readFileSync(join(layer, "package.json"), "utf8"));
-          return join(layer, pkg.main);
+          return join(realpathSync(layer), pkg.main);
         },
       },
     ],
@@ -198,6 +203,7 @@ export default defineConfig({
         // without this `pnpm dev` serves the registry and then 403s the very
         // module it imports.
         join(frontendRoot, "..", "extensions"),
+        ...unitScreenDirs,
       ],
     },
     // Everything the api owns is reachable through this origin, so

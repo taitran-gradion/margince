@@ -112,7 +112,7 @@ func digestTree(dir string) (string, error) {
 		//
 		// Skipped whole rather than filtered file by file: walking a
 		// dependency tree to hash nothing costs real time on every scan.
-		if d.IsDir() && d.Name() == nodeModulesDir {
+		if (d.IsDir() && d.Name() == nodeModulesDir) || outsideModule(dir, path, d) {
 			return fs.SkipDir
 		}
 		if d.IsDir() {
@@ -156,4 +156,20 @@ func digestFileOrEmpty(path string) (string, error) {
 		return "", err
 	}
 	return digestBytes(content), nil
+}
+
+// outsideModule reports whether a directory under a unit's root is not part of
+// the unit's module, by Go's own rule for a module zip: a folder holding its
+// own go.mod is another module, and a version-control folder is never content.
+// A unit composed from a local folder then reads as its published zip would.
+func outsideModule(root, path string, d fs.DirEntry) bool {
+	if !d.IsDir() || path == root {
+		return false
+	}
+	switch d.Name() {
+	case ".git", ".hg", ".svn", ".bzr":
+		return true
+	}
+	_, err := os.Stat(filepath.Join(path, "go.mod"))
+	return err == nil
 }
