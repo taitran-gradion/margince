@@ -51,7 +51,7 @@ func readUnitManifest(u extensionUnit, vocab map[string]string, verbs []declared
 	// ParseComments, because one of the declarations this reader has to judge
 	// lives in a comment: //go:embed binds a pattern to the var beneath it, and
 	// the Migrations field is checked against exactly that binding.
-	pkgs, err := parseDirByPackage(fset, u.Dir, parser.SkipObjectResolution|parser.ParseComments)
+	pkgs, err := parseDirByPackage(fset, u.goDir(), parser.SkipObjectResolution|parser.ParseComments)
 	if err != nil {
 		return unitManifest{}, fmt.Errorf("extensions/%s: %w", u.Name, err)
 	}

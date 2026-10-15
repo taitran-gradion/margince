@@ -136,6 +136,26 @@ depend on. The lock turns a core change into a build failure instead of a
 silent one. It cannot tell whether a change matters, so each core release asks
 the unit's author to read every file it replaces again.
 
+## Decorating and providing backend services
+
+A unit changes core's backend logic through declared fields on its
+`extension.Extension`, each derived into its manifest so an operator sees it.
+
+- `DecorateDeals` wraps core's `extension.DealService`. A decorator may refuse a
+  create, change its name, description or priority, call `next`, and then write
+  its own rows. Its `Runtime.Tx` joins the deal's transaction, so its failure
+  rolls the deal back. Every create reaches it, because the deals store runs
+  `createDealInTx` through `deals.Installation.WrapCreate`, which compose fills.
+- `ScoreDeals` provides a `DealScorer`, a service core has no implementation
+  of. `GET /deals/{id}/score` reads the deal under the caller's row scope and
+  asks the one provider. Without one it answers 404 `no_deal_scorer`, and two
+  providers refuse to boot.
+
+A unit may keep its Go package in `backend/` beside `api/` and `frontend/`,
+with its migrations in `backend/migrations/` next to the code that embeds them.
+The composition imports `<module>/backend`. A unit has one Go package, at the
+root or in `backend/`, so the declaration reader checks all of its Go code.
+
 ## Not covered
 
 - The `sdk` module split and the npm SDK: the unit compiled against the backend
