@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "name": "my-extension",
+  "version": "0.2.1",
+  "risk_tiers": [
+    {
+      "id": "tool/my_extension_ping",
+      "unit": "my-extension",
+      "kind": "agent_tool",
+      "contract": "crm.yaml",
+      "operation": "agent.tool.invoke",
+      "operation_id": "myExtensionPing",
+      "route": "/ext/my-extension/ping",
+      "method": "GET",
+      "scopes": [
+        "read"
+      ],
+      "tier": "auto_execute",
+      "fragment_hash": "sha256:afa32ee9ad938c34b5109af0098794df451873bb8c0074cbfa5ed1f6298d5f5e",
+      "digest": "sha256:160ac74755d1abb5427e5837f450a0092cc743257631b5f47afcd05d2452f389"
+    }
+  ]
+}
