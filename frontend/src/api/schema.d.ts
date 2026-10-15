@@ -3560,6 +3560,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/deals/{id}/score": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Opaque resource id (UUID; ordering semantics are not exposed). */
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Score a deal with the scorer an installed extension provides.
+         * @description Core has no scorer of its own. An installation's extension may provide one (extension.DealScorer); without one this answers 404 `no_deal_scorer`. A deal the caller cannot read answers 404 as any deal read does.
+         */
+        get: operations["getDealScore"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/deals/{id}": {
         parameters: {
             query?: never;
@@ -30275,6 +30298,13 @@ export interface components {
              */
             won_without_contract_detail?: string | null;
         };
+        DealScore: {
+            score: number;
+            /** @description What the score rests on, in the provider's words. */
+            reason: string;
+            /** @description The extension that scored the deal. */
+            provider: string;
+        };
         DealListResponse: {
             data: components["schemas"]["Deal"][];
             page: components["schemas"]["PageInfo"];
@@ -51601,6 +51631,30 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             409: components["responses"]["Conflict"];
             422: components["responses"]["ValidationError"];
+        };
+    };
+    getDealScore: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Opaque resource id (UUID; ordering semantics are not exposed). */
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The provided scorer's reading of the deal. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DealScore"];
+                };
+            };
+            404: components["responses"]["NotFound"];
         };
     };
     getDeal: {

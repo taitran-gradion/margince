@@ -131,7 +131,7 @@ func keep(schemas *yaml.Node, name string, kept map[string]*yaml.Node) error {
 // strings anyway — the precedent is extension.Caller.UserID, which is a string
 // for the same reason. date-time is deliberately absent: it generates
 // time.Time, which is stdlib.
-var nonStdlibFormats = []string{"uuid", "email"}
+var nonStdlibFormats = []string{"uuid", "email", "date"}
 
 // rewriteFormats stamps x-go-type: string on every node whose format would
 // otherwise generate a type the published package cannot import.

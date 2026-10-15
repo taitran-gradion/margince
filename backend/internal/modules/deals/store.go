@@ -119,6 +119,9 @@ type Installation struct {
 	// ContractVisible is the contracts module's row rule, which stage
 	// evidence asks before it calls a cited contract openable.
 	ContractVisible ContractVisibleClause
+	// WrapCreate lets an installation's extensions run their own logic around
+	// a deal's creation, inside its transaction. Unset, it is core's create.
+	WrapCreate WrapCreate
 }
 
 // EnsurePartner answers whether a company may be named as a deal's
@@ -154,6 +157,9 @@ func (i Installation) orRefusing() Installation {
 		if *f == nil {
 			*f = refusing(name)
 		}
+	}
+	if i.WrapCreate == nil {
+		i.WrapCreate = func(next CreateInTx) CreateInTx { return next }
 	}
 	if i.StampCorrespondence == nil {
 		i.StampCorrespondence = refusingStamp()

@@ -410,6 +410,10 @@ func (r *unitReader) readExtensionField(elt ast.Expr, file *ast.File, m *unitMan
 		if err == nil {
 			m.Subscriptions = append(m.Subscriptions, subs...)
 		}
+	case "DecorateDeals":
+		m.Decorates = append(m.Decorates, "deals")
+	case "ScoreDeals":
+		m.Provides = append(m.Provides, "deal_scorer")
 	case "Ingress":
 		var sources []ingressSource
 		sources, err = r.readIngress(kv.Value, file)

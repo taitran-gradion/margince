@@ -117,12 +117,16 @@ func (r *callRuntime) Tx(ctx context.Context, fn func(ctx context.Context, tx ex
 		if err := r.usable(); err != nil {
 			return err
 		}
-		return fn(ctx, extensionTx{
-			tx: tx,
-			core: extensionCore{
-				tx: tx, unattended: r.unattended, deps: r.deps, authority: r.scoped, unit: r.unit,
-			},
-			ledger: extensionLedger{tx: tx, namespace: namespace, authority: r.scoped},
-		})
+		return fn(ctx, r.txOn(tx, namespace))
 	})
+}
+
+func (r *callRuntime) txOn(tx pgx.Tx, namespace string) extensionTx {
+	return extensionTx{
+		tx: tx,
+		core: extensionCore{
+			tx: tx, unattended: r.unattended, deps: r.deps, authority: r.scoped, unit: r.unit,
+		},
+		ledger: extensionLedger{tx: tx, namespace: namespace, authority: r.scoped},
+	}
 }

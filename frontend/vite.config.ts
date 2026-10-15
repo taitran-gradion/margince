@@ -37,7 +37,7 @@ const unitScreenDirs = existsSync(unitScreensDir)
 type FileOverride = {
   unit: string;
   target: string;
-  source: string;
+  file: string;
 };
 const overridesFile = join(
   frontendRoot,
@@ -57,7 +57,7 @@ const fileOverrides: FileOverride[] =
 // own file, so an override can wrap the component it replaces.
 function overrideCoreFiles(): Plugin {
   const byTarget = new Map(
-    fileOverrides.map((o) => [resolve(frontendRoot, o.target), o.source]),
+    fileOverrides.map((o) => [resolve(frontendRoot, o.target), o.file]),
   );
   const coreOriginal = "@core-original/";
   return {
@@ -273,7 +273,7 @@ export default defineConfig({
         // module it imports.
         join(frontendRoot, "..", "extensions"),
         ...unitScreenDirs,
-        ...fileOverrides.map((o) => realpathSync(o.source)),
+        ...fileOverrides.map((o) => realpathSync(o.file)),
       ],
     },
     // Everything the api owns is reachable through this origin, so

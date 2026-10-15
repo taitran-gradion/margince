@@ -38,7 +38,7 @@ const (
 type fileOverride struct {
 	Unit   string `json:"unit"`
 	Target string `json:"target"` // relative to core's frontend/
-	Source string `json:"source"` // absolute
+	File   string `json:"file"`   // absolute, the unit's replacement
 }
 
 // composeOverrides writes what the bundler and tsc need to apply every unit's
@@ -113,7 +113,7 @@ func unitOverrides(u extensionUnit, frontendDir string) ([]fileOverride, error) 
 			return fmt.Errorf("%s: core's frontend/%s changed since the override was written (%s, now %s) — re-read it, update %s/%s, then set the lock line to:\n  %s %s",
 				u.Name, target, want, got, overridesLayer, target, target, got)
 		}
-		found = append(found, fileOverride{Unit: u.Name, Target: target, Source: p})
+		found = append(found, fileOverride{Unit: u.Name, Target: target, File: p})
 		return nil
 	})
 	if err != nil {
@@ -184,7 +184,7 @@ func emitOverrides(root string, overrides []fileOverride) error {
 	b.WriteString("type Keeps<_Override extends Original, Original> = true;\n")
 	for i, o := range overrides {
 		fmt.Fprintf(&b, "import type * as Original%d from %q;\n", i, "@core-original/"+strings.TrimSuffix(o.Target, filepath.Ext(o.Target)))
-		fmt.Fprintf(&b, "import type * as Override%d from %q;\n", i, strings.TrimSuffix(o.Source, filepath.Ext(o.Source)))
+		fmt.Fprintf(&b, "import type * as Override%d from %q;\n", i, strings.TrimSuffix(o.File, filepath.Ext(o.File)))
 		fmt.Fprintf(&b, "export type Check%d = Keeps<typeof Override%d, typeof Original%d>;\n", i, i, i)
 	}
 	return os.WriteFile(checkFile, []byte(b.String()), 0o644) // #nosec G306 -- build output

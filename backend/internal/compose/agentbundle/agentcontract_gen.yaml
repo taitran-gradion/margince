@@ -1577,6 +1577,21 @@ paths:
         '403': {$ref: '#/components/responses/Forbidden'}
         '409': {$ref: '#/components/responses/Conflict'}
         '422': {$ref: '#/components/responses/ValidationError'}
+  /deals/{id}/score:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      tags: [Deals]
+      operationId: getDealScore
+      summary: Score a deal with the scorer an installed extension provides.
+      description: Core has no scorer of its own. An installation's extension may provide one (extension.DealScorer); without one this answers 404 `no_deal_scorer`. A deal the caller cannot read answers 404 as any deal read does.
+      responses:
+        '200':
+          description: The provided scorer's reading of the deal.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/DealScore'}
+        '404': {$ref: '#/components/responses/NotFound'}
   /deals/{id}:
     parameters:
       - $ref: '#/components/parameters/Id'
@@ -13414,6 +13429,14 @@ components:
           maxLength: 500
           description: |-
             What the reason was. Required when it is `other`, which explains nothing alone.
+    DealScore:
+      type: object
+      additionalProperties: false
+      required: [score, reason, provider]
+      properties:
+        score: {type: integer, minimum: 0, maximum: 100}
+        reason: {type: string, description: 'What the score rests on, in the provider''s words.'}
+        provider: {type: string, description: The extension that scored the deal.}
     DealListResponse:
       type: object
       required: [data, page]

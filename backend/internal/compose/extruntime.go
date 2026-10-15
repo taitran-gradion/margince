@@ -168,7 +168,6 @@ type callRuntime struct {
 	// the one fact that decides both: nobody is there, so there is no authority
 	// a core write could be checked against.
 	unattended bool
-
 	// mu orders live: it is read and written under the same lock, so release
 	// and a handler-spawned goroutine cannot race the FLAG. It does not order
 	// the WORK — see usable.
