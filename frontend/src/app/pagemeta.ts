@@ -1,9 +1,10 @@
 import { useEntityName } from "../components/entityref";
-import { useT } from "../i18n";
+import { type Locale, useLocale, useT } from "../i18n";
 import type { MessageKey } from "../i18n/en";
 import { EXTENSION_SCREEN, findExtension } from "../lib/extensions";
 import type { Route, Screen } from "../lib/router";
 import { opensAFocusedFiltersPage } from "../screens/filtersaddress";
+import { CUSTOM_SCREEN, findCustomScreen, resolveCustomLabel } from "./custom";
 import {
   NAV,
   type NavLevelEntry,
@@ -126,6 +127,22 @@ export function resolveTitle(
   return offRailKey ? t(offRailKey) : t("shell.unknownPage");
 }
 
+// The page name for a route. A fork screen (app/custom.ts) carries its own words
+// rather than a key on the rail's list, so it is looked up by its key.
+export function routeTitle(
+  route: Route,
+  labelKey: MessageKey | undefined,
+  locale: Locale,
+  t: ReturnType<typeof useT>,
+): string {
+  const fork =
+    route.screen === CUSTOM_SCREEN ? findCustomScreen(route.id) : undefined;
+  const label = fork?.nav?.label ?? fork?.palette?.label;
+  return label
+    ? resolveCustomLabel(label, locale, t)
+    : resolveTitle(route.screen, labelKey, t);
+}
+
 /**
  * The name of a page, in the words the sidebar uses for it.
  *
@@ -191,6 +208,7 @@ export function sectionHead(
  */
 export function useRouteSubject(route: Route): string {
   const t = useT();
+  const { locale } = useLocale();
   const navItem = NAV.find((item) => item.screen === route.screen);
   // A composed unit's page is named by the UNIT, which is not in `NAV` and has
   // no title key: without this the subject fell through to `shell.unknownPage`
@@ -216,5 +234,5 @@ export function useRouteSubject(route: Route): string {
   const reserved = reservedPageTitle(route);
   return reserved
     ? t(reserved)
-    : resolveTitle(route.screen, navItem?.labelKey, t);
+    : routeTitle(route, navItem?.labelKey, locale, t);
 }

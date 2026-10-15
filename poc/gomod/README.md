@@ -58,43 +58,83 @@ All three: yes. Run `bash poc/gomod/run.sh` from the repository root to see it.
 
 ## Findings
 
-1. **One module carries both halves.** The zip held `frontend/` with the Go
+1. One module carries both halves. The zip held `frontend/` with the Go
    code, and one `extensions.sum` line pinned both.
-2. **Core's `replace composition` is the seam for Part 2.** Go ignores a
+2. Core's `replace composition` is the seam for Part 2. Go ignores a
    dependency's `replace`, so an outside module that requires `backend` picks
    the composition. A unit's `go.mod` needs no `require` of the backend at all.
-3. **`gen-composition` copies the whole unit, not only its frontend.** The
+3. `gen-composition` copies the whole unit, not only its frontend. The
    issue proposed compiling the Go code straight from the module cache. Copying
    everything was simpler: the manifest check, `test-extensions` and the gates
    all read a folder. The copy comes from the verified cache and is rebuilt on
    every run.
-4. **The folder list is copied across the tree, and the copies fail silently.**
+4. The folder list is copied across the tree, and the copies fail silently.
    About 50 files in `backend/gates`, `scripts`, `frontend/scripts`, the
    frontend configs and the Makefiles name `extensions/` themselves. This POC
    changed five of them. The rest pass while reading a smaller tree; for
    example, the screen imports gate (`frontend/scripts/ext-imports.test.ts`)
    and the design-system gates never saw `build/extensions/`. That is the
    single derived list #7679 asks for. It is the largest piece of real work.
-5. **Every lane now needs a proxy.** `make composition` is a prerequisite of
+5. Every lane now needs a proxy. `make composition` is a prerequisite of
    every lane, and it now downloads. Without `GOPROXY` (or network access) the
    first lane fails. CI needs a module cache, and offline work needs
    `GOFLAGS=-mod=mod` with a warm cache.
-6. **A screen with only `peerDependencies` gets no `node_modules`.** pnpm links
+6. A screen with only `peerDependencies` gets no `node_modules`. pnpm links
    nothing for it, and the type check fails on `react/jsx-runtime`. `v0.2.0`
    failed this way. A screen must also declare `devDependencies` such as
    `@types/react`, as `openchannel` does. The template must say so, or
    `gen-composition` should check it.
-7. **`extensions.sum` keeps old lines.** After upgrading, the sums of versions
+7. `extensions.sum` keeps old lines. After upgrading, the sums of versions
    no longer required stay. A `tidy` step should drop them, as `go mod tidy`
    does for `go.sum`.
-8. **A sum is recorded before the manifest check.** `v0.1.1` was refused, but
+8. A sum is recorded before the manifest check. `v0.1.1` was refused, but
    its sum was already written. Harmless (a sum states what was published, not
    what was accepted), but the order can be swapped.
-9. **`extensions.mod` and `extensions.sum` are not part of the composition
-   digest.** `make check-composition` does not see a changed `require` until
+9. `extensions.mod` and `extensions.sum` are not part of the composition
+   digest. `make check-composition` does not see a changed `require` until
    the next full generate. They belong in `computeInputs`.
 10. **`replace` in `extensions.mod` is refused for now.** A local unit is
     still developed under `extensions/`.
+
+## Adding screens and replacing core screen files
+
+A unit adds a page of its own the way core expects one, and replaces a core
+file only when no such way exists.
+
+**Adding a screen.** A unit's package entry, `index.tsx` in the sample, names
+everything its frontend gives core. Its default export is the unit's own page
+at `#/ext/<unit>`. An optional `screens` export, typed `CustomScreen[]` from
+`@margince/frontend/app`, adds pages beside core's. `gen-composition` imports
+each unit's entry into `extscreens.gen.ts`, and `app/custom.ts` adds the
+`screens` it finds to the registry core's own `src/screens/custom/` folder
+fills. Each screen gets `#/x/<key>`, and a `nav.group` of `records` gives it a
+sidebar row after Deals. A `screens` export of the wrong shape fails the
+composed typecheck in `app/custom.ts`, whether or not the unit typed it.
+
+**Replacing a file.** A unit's `frontend/overrides/` tree mirrors core's
+`frontend/`. `frontend/overrides/src/screens/deal360/dealheaderfacts.tsx` stands
+in for core's file of that path, for every importer. The unit's file reaches
+core's own copy as `@core-original/src/screens/deal360/dealheaderfacts`, so it
+can wrap the component instead of copying it.
+
+`gen-composition` refuses a replacement it cannot stand behind:
+
+| Refusal | Why |
+|---|---|
+| A replaced file with no line in `frontend/overrides.lock` | The error prints the line to add: the path and the hash of core's file |
+| A lock hash that no longer matches core's file | Core changed the file, so the override has to be read again |
+| Two units replacing one file | One file has one owner |
+| A file outside `src/screens/` | The API client, auth and generated files stay core's |
+| A file core does not have | An override replaces; a new page goes in the entry's `screens` |
+
+`build/composition-frontend/overrides.check.ts` makes the composed typecheck
+hold each replacement to every export of the file it replaces. The Vite plugin
+`margince-core-overrides` applies replacements in the composed lane only.
+
+The cost is that every file under `src/screens/` becomes something a unit can
+depend on. The lock turns a core change into a build failure instead of a
+silent one. It cannot tell whether a change matters, so each core release asks
+the unit's author to read every file it replaces again.
 
 ## Not covered
 

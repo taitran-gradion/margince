@@ -3,6 +3,7 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
+import type { Plugin } from "vite";
 import { defineConfig } from "vitest/config";
 import { serveMcpApps } from "./scripts/vite-inline-views.ts";
 import { pwa } from "./scripts/vite-pwa.ts";
@@ -16,13 +17,73 @@ import { TEST_TIMEOUT_MS } from "./vitest.budget.ts";
 // invoked. Composed: MARGINCE_COMPOSITION_FRONTEND names the generated
 // directory, exactly as GOWORK names the generated workspace for the Go lane.
 const frontendRoot = fileURLToPath(new URL(".", import.meta.url));
-const unitScreensDir = join(frontendRoot, "..", "build", "composition-frontend", "units");
+const unitScreensDir = join(
+  frontendRoot,
+  "..",
+  "build",
+  "composition-frontend",
+  "units",
+);
 // Where each enabled unit's screen really is: a local unit sits outside this
 // repository, and the dev server serves only folders it was told about.
 const unitScreenDirs = existsSync(unitScreensDir)
-  ? readdirSync(unitScreensDir).map((unit) => realpathSync(join(unitScreensDir, unit)))
+  ? readdirSync(unitScreensDir).map((unit) =>
+      realpathSync(join(unitScreensDir, unit)),
+    )
   : [];
+// Core frontend files a unit replaces, written by gen-composition after it
+// checked each one against the unit's overrides.lock. Only a composed lane
+// applies them, so the vanilla bundle stays core's own.
+type FileOverride = {
+  unit: string;
+  target: string;
+  source: string;
+};
+const overridesFile = join(
+  frontendRoot,
+  "..",
+  "build",
+  "composition-frontend",
+  "overrides.json",
+);
 const composedComposition = process.env.MARGINCE_COMPOSITION_FRONTEND;
+const fileOverrides: FileOverride[] =
+  composedComposition && existsSync(overridesFile)
+    ? JSON.parse(readFileSync(overridesFile, "utf8"))
+    : [];
+
+// Resolves every import of an overridden core file to the unit's file instead,
+// whatever specifier reached it. "@core-original/<path>" always means core's
+// own file, so an override can wrap the component it replaces.
+function overrideCoreFiles(): Plugin {
+  const byTarget = new Map(
+    fileOverrides.map((o) => [resolve(frontendRoot, o.target), o.source]),
+  );
+  const coreOriginal = "@core-original/";
+  return {
+    name: "margince-core-overrides",
+    enforce: "pre",
+    async resolveId(source, importer, options) {
+      if (source.startsWith(coreOriginal)) {
+        return this.resolve(
+          join(frontendRoot, source.slice(coreOriginal.length)),
+          importer,
+          {
+            ...options,
+            skipSelf: true,
+          },
+        );
+      }
+      if (byTarget.size === 0) return null;
+      const resolved = await this.resolve(source, importer, {
+        ...options,
+        skipSelf: true,
+      });
+      const replacement = resolved ? byTarget.get(resolved.id) : undefined;
+      return replacement && importer !== replacement ? replacement : null;
+    },
+  };
+}
 const compositionDir = composedComposition
   ? resolve(composedComposition)
   : join(frontendRoot, "src", "composition");
@@ -78,7 +139,13 @@ export default defineConfig({
   // falls through the SPA fallback below to a dev index.html carrying `src=`
   // module scripts and /@vite/client, which the api's admission check refuses by
   // name — so both views would be permanently unadvertised in every dev stack.
-  plugins: [react(), tailwindcss(), serveMcpApps(), pwa({ release })],
+  plugins: [
+    overrideCoreFiles(),
+    react(),
+    tailwindcss(),
+    serveMcpApps(),
+    pwa({ release }),
+  ],
   // The release this bundle was built from, compiled IN.
   //
   // It has to be in the bundle rather than read at run time, because the reader
@@ -159,7 +226,9 @@ export default defineConfig({
         customResolver: (unit) => {
           const layer = join(unitScreensDir, unit);
           if (!existsSync(layer)) return null;
-          const pkg = JSON.parse(readFileSync(join(layer, "package.json"), "utf8"));
+          const pkg = JSON.parse(
+            readFileSync(join(layer, "package.json"), "utf8"),
+          );
           return join(realpathSync(layer), pkg.main);
         },
       },
@@ -204,6 +273,7 @@ export default defineConfig({
         // module it imports.
         join(frontendRoot, "..", "extensions"),
         ...unitScreenDirs,
+        ...fileOverrides.map((o) => realpathSync(o.source)),
       ],
     },
     // Everything the api owns is reachable through this origin, so

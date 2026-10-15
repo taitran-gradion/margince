@@ -52,7 +52,7 @@ import {
 import {
   headsItself,
   PAGE_SUB_KEYS,
-  resolveTitle,
+  routeTitle,
   sectionHead,
 } from "./pagemeta";
 import { usePopoverDismiss } from "./popover";
@@ -670,7 +670,7 @@ export function PageTitle({
   const entryTitle = inSection
     ? entryLabel(inSection.entry, locale, t)
     : undefined;
-  const title = entryTitle ?? resolveTitle(route.screen, navItem?.labelKey, t);
+  const title = entryTitle ?? routeTitle(route, navItem?.labelKey, locale, t);
   // A record kind, and only then: an id segment that names no record is a
   // screen's own state — the settings tab, for one — and the page is still the
   // screen. Printing that slug as the page's name gave Settings an h1 reading

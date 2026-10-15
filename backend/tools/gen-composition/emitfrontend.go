@@ -138,6 +138,7 @@ func frontendGen(manifests []derivedManifest, verbs []declaredVerb, merged map[s
 // the filesystem happened to hand directories over.
 func extScreensGen(units []extensionUnit) []byte {
 	var imports, entries strings.Builder
+	var custom []string
 	for _, u := range units {
 		if u.Frontend == nil {
 			continue
@@ -145,19 +146,39 @@ func extScreensGen(units []extensionUnit) []byte {
 		ident := screenIdent(u.Name)
 		fmt.Fprintf(&imports, "import %s from %s;\n", ident, tsString(u.Frontend.Export))
 		fmt.Fprintf(&entries, "  %s: %s,\n", tsString(u.Name), ident)
+		moduleIdent := unitCamel(u.Name) + "Module"
+		fmt.Fprintf(&imports, "import * as %s from %s;\n", moduleIdent, tsString(u.Frontend.Export))
+		custom = append(custom, "...screensOf("+moduleIdent+")")
 	}
 	var b strings.Builder
 	b.WriteString(extScreensGenHeader)
 	b.WriteString(imports.String())
 	if entries.Len() == 0 {
 		b.WriteString("\nexport const extensionScreens = {};\n")
-		return []byte(b.String())
+	} else {
+		b.WriteString("\nexport const extensionScreens = {\n")
+		b.WriteString(entries.String())
+		b.WriteString("};\n")
 	}
-	b.WriteString("\nexport const extensionScreens = {\n")
-	b.WriteString(entries.String())
-	b.WriteString("};\n")
+	// The screens each unit's entry exports as `screens`, for app/custom.ts,
+	// which types them as it reads. A unit exporting none adds nothing.
+	if len(custom) == 0 {
+		b.WriteString("\nexport const extensionCustomScreens: readonly never[] = [];\n")
+	} else {
+		b.WriteString(screensOfHelper)
+		fmt.Fprintf(&b, "\nexport const extensionCustomScreens = [%s];\n", strings.Join(custom, ", "))
+	}
 	return []byte(b.String())
 }
+
+// screensOfHelper keeps a unit's `screens` export at its declared type, so
+// app/custom.ts checks it, and reads an absent export as none.
+const screensOfHelper = `
+type ScreensOf<Unit> = Unit extends { readonly screens: infer Screens } ? Screens : readonly [];
+function screensOf<Unit extends object>(unit: Unit): ScreensOf<Unit> {
+  return (Reflect.get(unit, "screens") ?? []) as ScreensOf<Unit>;
+}
+`
 
 // extLocalesGen emits the merged copy overlay: every enabled unit's strings,
 // per locale, in one object the catalogue spreads over its own.

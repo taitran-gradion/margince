@@ -15,7 +15,12 @@ import {
   reservedPageTitle,
 } from "./nav";
 import { NotificationBell } from "./notificationbell";
-import { resolveTitle, sectionHead, useRouteSubject } from "./pagemeta";
+import {
+  resolveTitle,
+  routeTitle,
+  sectionHead,
+  useRouteSubject,
+} from "./pagemeta";
 import { paletteHotkeyCaps } from "./palette";
 import "./topbar.css";
 
@@ -98,7 +103,7 @@ function useCrumbs(route: Route, section?: NavSection): readonly Crumb[] {
   if (filtersCrumbs) {
     return filtersCrumbs;
   }
-  return [{ label: resolveTitle(route.screen, navItem?.labelKey, t) }];
+  return [{ label: routeTitle(route, navItem?.labelKey, locale, t) }];
 }
 
 /**
