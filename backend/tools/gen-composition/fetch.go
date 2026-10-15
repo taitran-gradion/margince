@@ -27,6 +27,9 @@ const (
 	// read-only module cache. It is rebuilt on each run, so a require removed from
 	// extensions.mod leaves no folder behind that would still turn its unit on.
 	fetchedUnitsDir = "build/extensions"
+	// localUnitsFile lists the units extensions.mod replaces with a local
+	// folder, one "<name>\t<absolute dir>" per line.
+	localUnitsFile = "build/extensions.local"
 )
 
 var majorVersionSuffix = regexp.MustCompile(`^v[0-9]+$`)
@@ -44,38 +47,54 @@ type downloadedModule struct {
 // fetchRequiredUnits materializes every unit extensions.mod requires under
 // build/extensions/<name>/, after checking each download against extensions.sum.
 // A sum the file lacks is added, the way `go get` adds one to go.sum; a sum
-// that disagrees stops the build.
-func fetchRequiredUnits(root string) error {
+// that disagrees stops the build. A unit replaced by a local folder is used in
+// place, listed in build/extensions.local, so its author's edits are what runs.
+func fetchRequiredUnits(root, modPath string) error {
 	outDir := filepath.Join(root, filepath.FromSlash(fetchedUnitsDir))
 	if err := os.RemoveAll(outDir); err != nil {
 		return err
 	}
-	raw, err := os.ReadFile(filepath.Join(root, extensionsModFile)) // #nosec G304 -- the installation's own file at a fixed path
+	localList := filepath.Join(root, filepath.FromSlash(localUnitsFile))
+	if err := os.Remove(localList); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return err
+	}
+	if modPath == "" {
+		modPath = filepath.Join(root, extensionsModFile)
+	}
+	raw, err := os.ReadFile(modPath) // #nosec G304 -- the installation's own file, named by the operator
 	if errors.Is(err, fs.ErrNotExist) {
 		return nil
 	}
 	if err != nil {
 		return err
 	}
-	mod, err := modfile.Parse(extensionsModFile, raw, nil)
+	mod, err := modfile.Parse(modPath, raw, nil)
 	if err != nil {
 		return err
 	}
-	if len(mod.Replace) > 0 {
-		return fmt.Errorf("%s: replace is not composed yet — develop a local unit under extensions/ instead", extensionsModFile)
+	local, remote, err := splitLocalUnits(mod, filepath.Dir(modPath))
+	if err != nil {
+		return err
 	}
-	if len(mod.Require) == 0 {
+	if err := writeLocalUnits(localList, local); err != nil {
+		return err
+	}
+	if len(remote) == 0 {
 		return nil
 	}
-	sums, err := readSums(filepath.Join(root, extensionsSumFile))
+	sumPath := filepath.Join(filepath.Dir(modPath), extensionsSumFile)
+	sums, err := readSums(sumPath)
 	if err != nil {
 		return err
 	}
-	downloaded, err := downloadModules(mod.Require)
+	downloaded, err := downloadModules(remote)
 	if err != nil {
 		return err
 	}
 	seen := map[string]string{}
+	for _, l := range local {
+		seen[l.name] = l.dir
+	}
 	for _, d := range downloaded {
 		name := unitNameFromModulePath(d.Path)
 		if other, dup := seen[name]; dup {
@@ -92,7 +111,100 @@ func fetchRequiredUnits(root string) error {
 			return fmt.Errorf("%s@%s: %w", d.Path, d.Version, err)
 		}
 	}
-	return writeSums(filepath.Join(root, extensionsSumFile), sums)
+	return writeSums(sumPath, sums)
+}
+
+// localUnit is a required unit an extensions.mod replace points at a folder.
+type localUnit struct {
+	name string
+	dir  string
+}
+
+// splitLocalUnits separates the requires a replace points at a local folder
+// from the ones to download. Only a folder replace is composed: a replace onto
+// another module version would make the sum file record one module and the
+// build compile another.
+func splitLocalUnits(mod *modfile.File, base string) ([]localUnit, []*modfile.Require, error) {
+	required := map[string]bool{}
+	for _, r := range mod.Require {
+		required[r.Mod.Path] = true
+	}
+	replaced := map[string]string{}
+	for _, r := range mod.Replace {
+		if r.New.Version != "" {
+			return nil, nil, fmt.Errorf("%s: replace %s => %s %s: only a local folder can replace a unit", extensionsModFile, r.Old.Path, r.New.Path, r.New.Version)
+		}
+		if !required[r.Old.Path] {
+			return nil, nil, fmt.Errorf("%s: replace %s names a module it does not require", extensionsModFile, r.Old.Path)
+		}
+		dir := r.New.Path
+		if !filepath.IsAbs(dir) {
+			dir = filepath.Join(base, dir)
+		}
+		replaced[r.Old.Path] = filepath.Clean(dir)
+	}
+	var local []localUnit
+	var remote []*modfile.Require
+	for _, r := range mod.Require {
+		dir, ok := replaced[r.Mod.Path]
+		if !ok {
+			remote = append(remote, r)
+			continue
+		}
+		if err := requireModulePath(dir, r.Mod.Path); err != nil {
+			return nil, nil, err
+		}
+		local = append(local, localUnit{name: unitNameFromModulePath(r.Mod.Path), dir: dir})
+	}
+	return local, remote, nil
+}
+
+// requireModulePath refuses a folder whose go.mod declares some other module:
+// the replace would compose a unit under a name its own code does not carry.
+func requireModulePath(dir, want string) error {
+	raw, err := os.ReadFile(filepath.Join(dir, "go.mod")) // #nosec G304 -- a folder the installation's own extensions.mod names
+	if err != nil {
+		return fmt.Errorf("%s: replace %s => %s: %w", extensionsModFile, want, dir, err)
+	}
+	if got := modfile.ModulePath(raw); got != want {
+		return fmt.Errorf("%s: replace %s => %s: that folder is module %q", extensionsModFile, want, dir, got)
+	}
+	return nil
+}
+
+func writeLocalUnits(file string, local []localUnit) error {
+	if len(local) == 0 {
+		return nil
+	}
+	if err := os.MkdirAll(filepath.Dir(file), 0o755); err != nil { // #nosec G301 -- build output stays readable to another UID
+		return err
+	}
+	var b strings.Builder
+	for _, l := range local {
+		fmt.Fprintf(&b, "%s\t%s\n", l.name, l.dir)
+	}
+	return os.WriteFile(file, []byte(b.String()), 0o644) // #nosec G306 -- build output
+}
+
+// readLocalUnits reads what the last fetch listed, so -verify judges the same
+// set the generate run composed.
+func readLocalUnits(root string) ([]localUnit, error) {
+	raw, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(localUnitsFile))) // #nosec G304 -- build output at a fixed path
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	var local []localUnit
+	for _, line := range strings.Split(strings.TrimSpace(string(raw)), "\n") {
+		name, dir, ok := strings.Cut(line, "\t")
+		if !ok {
+			return nil, fmt.Errorf("%s: malformed line %q — run make composition again", localUnitsFile, line)
+		}
+		local = append(local, localUnit{name: name, dir: dir})
+	}
+	return local, nil
 }
 
 // downloadModules asks the go command for each required module, outside any
