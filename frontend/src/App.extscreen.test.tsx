@@ -69,7 +69,7 @@ vi.mock("@composition/screens", () => ({
     // descriptor lookup is the gate, and an entry here is not one.
     "crm-ghost": () => <Heading size="xlarge">Ghost</Heading>,
   },
-  // A unit's screens.tsx: its own address under #/x and a row in Records.
+  // A unit's `screens` export: its own address under #/x and a row in Records.
   extensionCustomScreens: [
     {
       key: "notes-desk",

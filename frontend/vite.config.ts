@@ -223,13 +223,9 @@ export default defineConfig({
         replacement: "$1",
         // One link per enabled unit, written by gen-composition, wherever the
         // unit lives: extensions/, build/extensions/ or a local folder.
-        // `@margince-ext/<unit>` is the package's main; `@margince-ext/<unit>/screens`
-        // its screens.tsx, which joins core's custom screens.
-        customResolver: (specifier) => {
-          const [unit, subpath] = specifier.split(/\/(.*)/s);
+        customResolver: (unit) => {
           const layer = join(unitScreensDir, unit);
           if (!existsSync(layer)) return null;
-          if (subpath) return join(realpathSync(layer), `${subpath}.tsx`);
           const pkg = JSON.parse(
             readFileSync(join(layer, "package.json"), "utf8"),
           );

@@ -298,22 +298,24 @@ func TestExtScreensGenIsOrderedByUnitName(t *testing.T) {
 	}
 }
 
-// A unit's screens.tsx joins core's custom screens; a unit without one adds
-// nothing to that list.
-func TestExtScreensGenCollectsEachUnitsCustomScreens(t *testing.T) {
+// Every unit with a package offers its entry's `screens` export, if any, to
+// core's custom screens; the helper reads a missing export as none.
+func TestExtScreensGenOffersEachUnitsScreensExport(t *testing.T) {
 	got := string(extScreensGen([]extensionUnit{
-		{Name: "acme-greeting", Frontend: &unitFrontend{Package: "@margince-ext/acme-greeting", Export: "@margince-ext/acme-greeting", CustomScreens: "@margince-ext/acme-greeting/screens"}},
+		{Name: "acme-greeting", Frontend: &unitFrontend{Package: "@margince-ext/acme-greeting", Export: "@margince-ext/acme-greeting"}},
+		{Name: "de"},
 		{Name: "notes", Frontend: &unitFrontend{Package: "@margince-ext/notes", Export: "@margince-ext/notes"}},
 	}))
 	for _, want := range []string{
-		`import { screens as AcmeGreetingCustomScreens } from "@margince-ext/acme-greeting/screens";`,
-		`export const extensionCustomScreens = [...AcmeGreetingCustomScreens];`,
+		`import * as AcmeGreetingModule from "@margince-ext/acme-greeting";`,
+		`export const extensionCustomScreens = [...screensOf(AcmeGreetingModule), ...screensOf(NotesModule)];`,
+		`function screensOf<Unit extends object>`,
 	} {
 		if !strings.Contains(got, want) {
 			t.Errorf("emitted registry is missing %q:\n%s", want, got)
 		}
 	}
-	if strings.Contains(got, "NotesCustomScreens") {
-		t.Errorf("a unit without screens.tsx must add no custom screens:\n%s", got)
+	if strings.Contains(got, "DeModule") {
+		t.Errorf("a unit with no frontend package must offer no screens:\n%s", got)
 	}
 }

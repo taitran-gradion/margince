@@ -158,7 +158,7 @@ export const customScreens: CustomScreenRegistry = buildRegistry({
   ...unitScreenModules(extensionCustomScreens),
 });
 
-// A composed unit's own screens (its frontend's screens.tsx), keyed so a clash
+// A composed unit's own screens (its package's `screens` export), keyed so a clash
 // with a fork screen or another unit's names the unit.
 function unitScreenModules(
   screens: readonly CustomScreen[],

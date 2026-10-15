@@ -101,14 +101,15 @@ All three: yes. Run `bash poc/gomod/run.sh` from the repository root to see it.
 A unit adds a page of its own the way core expects one, and replaces a core
 file only when no such way exists.
 
-**Adding a screen.** A unit's frontend package may ship `screens.tsx`, which
-exports `screens: readonly CustomScreen[]`. `CustomScreen` comes from
-`@margince/frontend/app`. `gen-composition` imports each unit's list into
-`extscreens.gen.ts`, and `app/custom.ts` adds it to the registry that core's
-own `src/screens/custom/` folder fills. Each screen gets `#/x/<key>`, and a
-`nav.group` of `records` gives it a sidebar row after Deals. It is an ordinary
-file of the unit, checked by the composed typecheck like the rest of its
-package.
+**Adding a screen.** A unit's package entry, `index.tsx` in the sample, names
+everything its frontend gives core. Its default export is the unit's own page
+at `#/ext/<unit>`. An optional `screens` export, typed `CustomScreen[]` from
+`@margince/frontend/app`, adds pages beside core's. `gen-composition` imports
+each unit's entry into `extscreens.gen.ts`, and `app/custom.ts` adds the
+`screens` it finds to the registry core's own `src/screens/custom/` folder
+fills. Each screen gets `#/x/<key>`, and a `nav.group` of `records` gives it a
+sidebar row after Deals. A `screens` export of the wrong shape fails the
+composed typecheck in `app/custom.ts`, whether or not the unit typed it.
 
 **Replacing a file.** A unit's `frontend/overrides/` tree mirrors core's
 `frontend/`. `frontend/overrides/src/screens/deal360/dealheaderfacts.tsx` stands
@@ -124,7 +125,7 @@ can wrap the component instead of copying it.
 | A lock hash that no longer matches core's file | Core changed the file, so the override has to be read again |
 | Two units replacing one file | One file has one owner |
 | A file outside `src/screens/` | The API client, auth and generated files stay core's |
-| A file core does not have | An override replaces; a new page is a `screens.tsx` entry |
+| A file core does not have | An override replaces; a new page goes in the entry's `screens` |
 
 `build/composition-frontend/overrides.check.ts` makes the composed typecheck
 hold each replacement to every export of the file it replaces. The Vite plugin

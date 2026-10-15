@@ -21,8 +21,8 @@ import {
 } from "../i18n";
 import type { MessageKey } from "../i18n/en";
 
-// A unit's screens.tsx exports `screens: CustomScreen[]`; each gets #/x/<key>
-// and, with `nav`, a sidebar row.
+// A unit's package entry may export `screens: CustomScreen[]`; each gets
+// #/x/<key> and, with `nav`, a sidebar row.
 export type { CustomLabel, CustomScreen } from "../app/custom";
 // `formatNumber` alongside `formatDateTime` for the same reason: a unit's screen
 // renders figures a reader reads, `useT` below refuses a raw number, and the

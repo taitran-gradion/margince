@@ -146,11 +146,9 @@ func extScreensGen(units []extensionUnit) []byte {
 		ident := screenIdent(u.Name)
 		fmt.Fprintf(&imports, "import %s from %s;\n", ident, tsString(u.Frontend.Export))
 		fmt.Fprintf(&entries, "  %s: %s,\n", tsString(u.Name), ident)
-		if u.Frontend.CustomScreens != "" {
-			customIdent := unitCamel(u.Name) + "CustomScreens"
-			fmt.Fprintf(&imports, "import { screens as %s } from %s;\n", customIdent, tsString(u.Frontend.CustomScreens))
-			custom = append(custom, "..."+customIdent)
-		}
+		moduleIdent := unitCamel(u.Name) + "Module"
+		fmt.Fprintf(&imports, "import * as %s from %s;\n", moduleIdent, tsString(u.Frontend.Export))
+		custom = append(custom, "...screensOf("+moduleIdent+")")
 	}
 	var b strings.Builder
 	b.WriteString(extScreensGenHeader)
@@ -162,14 +160,25 @@ func extScreensGen(units []extensionUnit) []byte {
 		b.WriteString(entries.String())
 		b.WriteString("};\n")
 	}
-	// Each unit's own screens for app/custom.ts, which types them as it reads.
+	// The screens each unit's entry exports as `screens`, for app/custom.ts,
+	// which types them as it reads. A unit exporting none adds nothing.
 	if len(custom) == 0 {
 		b.WriteString("\nexport const extensionCustomScreens: readonly never[] = [];\n")
 	} else {
+		b.WriteString(screensOfHelper)
 		fmt.Fprintf(&b, "\nexport const extensionCustomScreens = [%s];\n", strings.Join(custom, ", "))
 	}
 	return []byte(b.String())
 }
+
+// screensOfHelper keeps a unit's `screens` export at its declared type, so
+// app/custom.ts checks it, and reads an absent export as none.
+const screensOfHelper = `
+type ScreensOf<Unit> = Unit extends { readonly screens: infer Screens } ? Screens : readonly [];
+function screensOf<Unit extends object>(unit: Unit): ScreensOf<Unit> {
+  return (Reflect.get(unit, "screens") ?? []) as ScreensOf<Unit>;
+}
+`
 
 // extLocalesGen emits the merged copy overlay: every enabled unit's strings,
 // per locale, in one object the catalogue spreads over its own.
