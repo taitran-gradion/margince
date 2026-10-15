@@ -137,6 +137,9 @@ func generate(root string) error {
 	if err := stubMatchesVanilla(root); err != nil {
 		return err
 	}
+	if err := fetchRequiredUnits(root); err != nil {
+		return err
+	}
 	// The manifests are derived from the merged contracts, so composedFiles
 	// produces both: the composition has to exist before a manifest can be
 	// written. This is the same ordering `make gen` applies one level up.
@@ -175,14 +178,18 @@ func generate(root string) error {
 	// directory that does not exist is a claim pnpm currently tolerates by
 	// ignoring it, which is not a property to depend on — and `de` ships no
 	// frontend/ at all.
-	unitNames := make([]string, 0, len(composed.Manifests))
+	unitDirs := make([]string, 0, len(composed.Manifests))
 	for _, m := range composed.Manifests {
 		if m.Unit.Frontend == nil {
 			continue
 		}
-		unitNames = append(unitNames, m.Unit.Name)
+		rel, err := filepath.Rel(root, m.Unit.Dir)
+		if err != nil {
+			return err
+		}
+		unitDirs = append(unitDirs, filepath.ToSlash(rel))
 	}
-	if err := emitComposedFrontendWorkspace(filepath.Join(root, filepath.FromSlash(composedFrontendWorkspaceDir)), unitNames); err != nil {
+	if err := emitComposedFrontendWorkspace(filepath.Join(root, filepath.FromSlash(composedFrontendWorkspaceDir)), unitDirs); err != nil {
 		return err
 	}
 	m, err := currentManifest(root, composed.Files)

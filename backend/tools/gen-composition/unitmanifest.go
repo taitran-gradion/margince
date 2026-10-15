@@ -323,8 +323,14 @@ func unitSecretScope(m unitManifest) string {
 func generateUnitManifests(derived []derivedManifest) error {
 	for _, d := range derived {
 		path := filepath.Join(d.Unit.Dir, unitManifestFile)
-		if existing, err := os.ReadFile(path); err == nil && bytes.Equal(existing, d.Encoded) { // #nosec G304 -- a path this generator derives from the tree it is reading
+		existing, readErr := os.ReadFile(path) // #nosec G304 -- a path this generator derives from the tree it is reading
+		if readErr == nil && bytes.Equal(existing, d.Encoded) {
 			continue
+		}
+		// A fetched unit's manifest is what was reviewed at its release: one that
+		// no longer derives from the code beside it is refused, never rewritten.
+		if d.Unit.Fetched {
+			return fmt.Errorf("%s: the shipped %s does not match what the unit's code declares — the release is inconsistent; ask its publisher for a fixed version", d.Unit.Name, unitManifestFile)
 		}
 		if err := writeFileAtomic(d.Unit.Dir, path, d.Encoded); err != nil {
 			return err

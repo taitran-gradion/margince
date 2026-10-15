@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import tailwindcss from "@tailwindcss/vite";
@@ -147,7 +147,16 @@ export default defineConfig({
       // the Go side.
       {
         find: /^@margince-ext\/(.+)$/,
-        replacement: join(frontendRoot, "..", "extensions", "$1", "frontend"),
+        replacement: "$1",
+        // The installation's own units, then the ones extensions.mod fetched.
+        customResolver: (unit) => {
+          const layer = [join("extensions", unit), join("build", "extensions", unit)]
+            .map((dir) => join(frontendRoot, "..", dir, "frontend"))
+            .find((dir) => existsSync(dir));
+          if (!layer) return null;
+          const pkg = JSON.parse(readFileSync(join(layer, "package.json"), "utf8"));
+          return join(layer, pkg.main);
+        },
       },
     ],
     // ONE copy of every package that keeps state the HOST owns: React's hook

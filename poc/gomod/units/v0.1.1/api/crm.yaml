@@ -1,0 +1,38 @@
+# SPDX-License-Identifier: BUSL-1.1
+# SPDX-FileCopyrightText: 2026 Gradion
+#
+# Paths are relative to the contract's servers url, which already ends in /v1,
+# so this route is served at /v1/ext/my-extension/ping.
+overlay: 1.0.0
+info:
+  title: my-extension
+  version: "0.1.0"
+actions:
+  - target: $.paths['/ext/my-extension/ping']
+    update:
+      get:
+        operationId: myExtensionPing
+        summary: Acknowledge a ping.
+        tags: [Extensions]
+        x-mcp-tool:
+          verb: my_extension_ping
+          version: 1.0.0
+          title: Ping my-extension
+          tier: auto_execute
+          scope: read
+          description: >-
+            Acknowledge a ping from the my-extension unit. It reads and alters
+            nothing, and its result carries nothing to use in a later call.
+        responses:
+          '200':
+            description: The acknowledgement.
+            content:
+              application/json:
+                schema:
+                  type: object
+                  additionalProperties: false
+                  required: [ok]
+                  properties:
+                    ok: { type: boolean }
+          '401': { $ref: '#/components/responses/Unauthorized' }
+          '403': { $ref: '#/components/responses/Forbidden' }
