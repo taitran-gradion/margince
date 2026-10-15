@@ -38,9 +38,6 @@ const (
 	// composedOverlayDir holds the rewritten core files, the units' files and
 	// overlay.json, the map `go build -overlay` reads.
 	composedOverlayDir = "build/overlay"
-	// overlayBackendEnv names the core backend the build compiles, when it is
-	// not this tree's: an instance builds core from its module cache.
-	overlayBackendEnv = "MARGINCE_OVERLAY_BACKEND"
 )
 
 // composeReplacements writes everything units compile over core: frontend
@@ -97,10 +94,9 @@ func composeOverlays(root string, units []extensionUnit) error {
 	if err := os.RemoveAll(out); err != nil {
 		return err
 	}
-	backend := os.Getenv(overlayBackendEnv)
-	if backend == "" {
-		backend = filepath.Join(root, "backend")
-	}
+	// This tree's backend: Go refuses to overlay a file in the module cache,
+	// so a build with overlays compiles core from a tree like this one.
+	backend := filepath.Join(root, "backend")
 	replace := map[string]string{}
 	owners := map[string]string{}
 	var decorations []decoration

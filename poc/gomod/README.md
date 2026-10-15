@@ -162,7 +162,10 @@ operator sees what a unit touches before turning it on.
   its file and writes `build/overlay/overlay.json` for `go build -overlay`.
   `backend/overlays.lock` pins each decorated function by the hash of its
   source, so a core change to that function stops the build. Only an
-  installation's own folder may ship overlays; a fetched unit is refused.
+  installation's own folder may ship overlays; a fetched unit is refused. Go
+  refuses to overlay a file in the module cache, so an installation with
+  overlays builds core from a clone at the same version, through
+  `build/composition/go.work`.
 
 A unit may keep its Go package in `backend/` beside `api/` and `frontend/`,
 with `backend/migrations/` and `backend/overlays/` beside it. The composition
